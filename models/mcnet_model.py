@@ -20,7 +20,6 @@ class McnetModel(BaseModel):
         # define tensor
         self.K = opt.K
         self.T = opt.T
-        self.opt = opt
         self.targets = [] # first K-1 are diff, the last one is raw
         for i in range(self.K+self.T):
             self.inputs.append(self.Tensor(opt.batch_size, opt.c_dim, opt.image_size[0], opt.image_size[1]))
