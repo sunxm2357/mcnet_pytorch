@@ -6,21 +6,11 @@ import functools
 from torch.autograd import Variable
 from torch.optim import lr_scheduler
 import numpy as np
-
+from util.util import *
 ###############################################################################
 # Functions
 ###############################################################################
 
-
-def inverse_transform(images):
-    return (images+1.)/2
-
-
-def bgr2gray(image):
-    # rgb -> grayscale 0.2989 * R + 0.5870 * G + 0.1140 * B
-    gray_ = 0.1140 * image[:, 0, :, :] + 0.5870 * image[:, 1, :, :] + 0.2989 * image[:, 2, :, :]
-    gray = torch.unsqueeze(gray_, 1)
-    return gray
 
 
 # TODO, look into init functions
