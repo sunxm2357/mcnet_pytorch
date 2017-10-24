@@ -16,7 +16,13 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
         self.parser.add_argument('--lr_policy', type=str, default= None, help='learning rate policy: lambda|step|plateau')
         self.parser.add_argument('--which_epoch', type=str, default='latest', help='which epoch to load? set to latest to use latest cached model')
-        self.parser.add_argument('--marigin', type=float, default=0.3, help="the margin used for choosing opt D or G")
+        self.parser.add_argument('--margin', type=float, default=0.3, help="the margin used for choosing opt D or G")
+        
+        # Data Augment
+        self.parser.add_argument("--debug", default=False, type=bool, help="when debugging, overfit to the first training samples")
+        self.parser.add_argument("--backwards", default=True, type=bool, help="play the video backwards")
+        self.parser.add_argument("--pick_mode", default='Random', type=str, help="pick up clip [Random|First|Sequential]")
+        self.parser.add_argument("--flip", default=True, type=bool, help="flip the frames in the videos")
 
         # TODO: add or delete
         self.parser.add_argument('--epoch_count', type=int, default=1, help='the starting epoch count, we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>, ...')
