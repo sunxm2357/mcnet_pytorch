@@ -11,10 +11,15 @@ import collections
 # Converts a Tensor into a Numpy array
 # |imtype|: the desired type of the converted numpy array
 def tensor2im(image_tensor, imtype=np.uint8):
+    """
+    :param image_tensor: [batch_size, c, h, w]
+    :param imtype: np.uint8
+    :return: ndarray [batch_size, c, h, w]
+    """
     image_numpy = image_tensor[0].cpu().float().numpy()
-    if image_numpy.shape[0] == 1:
-        image_numpy = np.tile(image_numpy, (3, 1, 1))
-    image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+    if image_numpy.shape[1] == 1:
+        image_numpy = np.tile(image_numpy, (1, 3, 1, 1))
+    image_numpy = (np.transpose(image_numpy, (0, 2, 3, 1)) + 1) / 2.0 * 255.0
     return image_numpy.astype(imtype)
 
 
@@ -37,3 +42,8 @@ def bgr2gray(image):
     gray_ = 0.1140 * image[:, 0, :, :] + 0.5870 * image[:, 1, :, :] + 0.2989 * image[:, 2, :, :]
     gray = torch.unsqueeze(gray_, 1)
     return gray
+
+
+def makedir(folder):
+    if not os.path.isdir(folder):
+        os.makedirs(folder)

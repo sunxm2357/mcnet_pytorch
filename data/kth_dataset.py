@@ -89,7 +89,7 @@ class KthDataset(BaseDataset):
         target = fore_transform(torch.stack(targets, dim=-1))
         diff_in = torch.stack(diff_ins, dim=-1)
 
-        return {'targets': target, 'diff_in': diff_in }
+        return {'targets': target, 'diff_in': diff_in, 'video_name': tokens[0]}
 
 
 

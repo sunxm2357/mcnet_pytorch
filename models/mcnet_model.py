@@ -62,7 +62,7 @@ class McnetModel(BaseModel):
             #             + list(self.comb_layers.parameters()) + list(self.comb_layers.parameters()) + list(self.residual13.parameters())\
             #             + list(self.residual2.parameters()) + list(self.residual1.parameters()) + list(self.dec_cnn.parameters())
             self.optimizer_G = torch.optim.Adam(self.generator.parameters(),
-                                                lr=opt.lr, betas=(opt.beta1, 0.999)) # TODO, check the lr and beta of Mcnet train, beta1 =0.5
+                                                lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(self.discriminator.parameters(),
                                                 lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
@@ -75,7 +75,7 @@ class McnetModel(BaseModel):
             self.updateD = True
             self.updateG = True
 
-    def set_inputs(self, input): # TODO: changing after finishing dataloader
+    def set_inputs(self, input):
         targets = torch.from_numpy(input["targets"]) # shape[-1] = K+T
         diff_in = torch.from_numpy(input["diff_in"]) # shape[-1] = K-1
         #  if opt.task == "infill":
@@ -189,11 +189,14 @@ class McnetModel(BaseModel):
 
 
     def get_current_visuals(self):
+        '''
+        :return: dict, diff_in: K-1 [batch_size, h, w, c], ndarray, [0,255];
+         targets: K+T ndarrays, pred: T ndarray
+        '''
         diff_in = util.tensorlist2imlist(self.diff_in)
-        raw = util.tensor2im(self.targets[self.K-1])
         targets = util.tensorlist2imlist(self.targets)
         pred = util.tensorlist2imlist(self.pred)
-        return OrderedDict([('diff_in', diff_in), ('raw', raw), ('targets', targets), ('pred', pred)])
+        return OrderedDict([('diff_in', diff_in), ('targets', targets), ('pred', pred)])
 
 
     def save(self, label):
