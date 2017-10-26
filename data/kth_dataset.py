@@ -1,6 +1,6 @@
 import os.path
 import random
-import torchvision.transform as transforms
+import torchvision.transforms as transforms
 import torch
 from data.base_dataset import BaseDataset
 from PIL import Image
@@ -8,12 +8,15 @@ import imageio
 import numpy as np
 import cv2
 from util.util import *
+import pdb
+DEBUG = True
 
 class KthDataset(BaseDataset):
     def initialize(self, opt):
         self.opt= opt
         self.root = opt.dataroot
-        if self.is_train:
+        self.toTensor = transforms.ToTensor()
+        if self.opt.is_train:
             f = open(os.path.join(self.root, 'train_data_list_trimmed.txt'), 'r')
         else:
             f = open(os.path.join(self.root, 'test_data_list.txt'), 'r')
@@ -27,15 +30,16 @@ class KthDataset(BaseDataset):
         self.image_size = opt.image_size
         if self.debug:
             self.backwards = False
-            self.filp = False
+            self.flip = False
             self.pick_mode = "First"
         if self.pick_mode == "Sequential":
             self.count = np.zeros(len(self.files))
+        # pdb.set_trace()
 
 
     def __len__(self):
         if self.debug:
-            return self.opt.batchsize
+            return self.opt.batch_size
         else:
             return len(self.trainfiles)
 
@@ -56,7 +60,6 @@ class KthDataset(BaseDataset):
                 stidx = np.random.randint(low=low, high=high)
         elif self.pick_mode == "First":
             stidx = low
-
         elif self.pick_mode == "Sequential":
             stidx = self.count[index]*(self.K + self.T) + low
             if stidx > high:
@@ -70,10 +73,13 @@ class KthDataset(BaseDataset):
         back_flag = random.random()
         for t in range(self.K + self.T):
             img = cv2.cvtColor(cv2.resize(vid.get_data(stidx + t), (self.image_size, self.image_size)), cv2.COLOR_RGB2GRAY)
+            # if DEBUG:
+            #     pdb.set_trace()
             assert (np.max(img) > 1, "the range of image should be [0,255]")
+            if len(img.shape) == 2: img = np.expand_dims(img, axis=2)
             if self.flip and flip_flag > 0.5:
                 img = img[:, ::-1, :]
-            targets.append(transforms.ToTensor(img))
+            targets.append(self.toTensor(img))
             imgs.append(img)
 
         if self.backwards and back_flag > 0.5:
@@ -84,12 +90,12 @@ class KthDataset(BaseDataset):
         for t in range(1, self.K):
             prev = imgs[t-1]/255.
             next = imgs[t]/255.
-            diff_ins.append(torch.from_numpy(np.transpose(next - prev, axes=(2, 0, 1))))
+            diff_ins.append(torch.from_numpy(np.transpose(next - prev, axes=(2, 0, 1))).float())
 
         target = fore_transform(torch.stack(targets, dim=-1))
         diff_in = torch.stack(diff_ins, dim=-1)
 
-        return {'targets': target, 'diff_in': diff_in, 'video_name': tokens[0]}
+        return {'targets': target, 'diff_in': diff_in, 'video_name': '%s_%s_%s' % (tokens[0], tokens[1], tokens[2])}
 
 
 

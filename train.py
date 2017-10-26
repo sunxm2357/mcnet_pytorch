@@ -3,8 +3,10 @@ from options.train_options import TrainOptions
 from models.models import create_model
 from data.data_loader import *
 from util.visualizer import Visualizer
+import pdb
 
 def main():
+    # pdb.set_trace()
     opt = TrainOptions().parse()
     if opt.debug:
         opt.print_freq = 1
@@ -13,7 +15,7 @@ def main():
     dataset_size = len(data_loader)
     print('# training videos = %d' % dataset_size)
 
-    model =create_model(opt)
+    model = create_model(opt)
     visualizer = Visualizer(opt)
     total_steps = 0  # total # of videos
 
@@ -25,7 +27,7 @@ def main():
             iter_start_time = time.time()
             total_steps += opt.batch_size
             epoch_iters += opt.batch_size
-            model.set_input(data)
+            model.set_inputs(data)
             model.optimize_parameters()
 
             if total_steps % opt.print_freq == 0:

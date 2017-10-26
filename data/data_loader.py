@@ -1,5 +1,6 @@
 from data.base_data_loader import BaseDataLoader
 import torch.utils.data
+import pdb
 
 def CreateDataset(opt):
     dataset = None
@@ -21,7 +22,7 @@ class CustomDataLoader(BaseDataLoader):
     def initialize(self, opt):
         BaseDataLoader.initialize(self, opt)
         self.dataset = CreateDataset(opt)
-        if self.debug:
+        if opt.debug:
             opt.serial_batches = True
         self.dataloader = torch.utils.data.DataLoader(self.dataset, batch_size=opt.batch_size, shuffle=not opt.serial_batches, num_workers=int(opt.nThreads), drop_last=True)
 
@@ -36,4 +37,5 @@ def CreateDataLoader(opt):
     data_loader = CustomDataLoader()
     print(data_loader.name())
     data_loader.initialize(opt)
+    # pdb.set_trace()
     return data_loader

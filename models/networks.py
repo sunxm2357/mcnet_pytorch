@@ -7,6 +7,7 @@ from torch.autograd import Variable
 from torch.optim import lr_scheduler
 import numpy as np
 from util.util import *
+import pdb
 ###############################################################################
 # Functions
 ###############################################################################
@@ -65,13 +66,20 @@ def weights_init_orthogonal(m):
 def weights_init_mcnet(m):
     classname = m.__class__.__name__
     print(classname)
-    if classname.find('Conv') != -1:
+    # pdb.set_trace()
+    if classname.find('Conv') != -1 and classname != 'ConvLstmCell':
         init.xavier_normal(m.weight.data, gain=1)
+        # m.weight.data = m.weight.data.double()
+        # m.bias.data = m.bias.data.double()
+        # pdb.set_trace()
     elif classname.find('Linear') != -1:
         init.uniform(m.weight.data, 0.0, 0.02)
+        # m.weight.data = m.weight.data.double()
     elif classname.find('BatchNorm2d') != -1:
         init.uniform(m.weight.data, 1.0, 0.02)
         init.constant(m.bias.data, 0.0)
+        # m.weight.data = m.weight.data.double()
+        # m.bias.data = m.bias.data.double()
 
 
 
@@ -90,6 +98,7 @@ def init_weights(net, init_type='normal'):
     else:
         raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
 
+
 def define_motion_enc(gf_dim, init_type="mcnet", gpu_ids=[]):
     # motion_enc = None
     use_gpu = len(gpu_ids) > 0
@@ -101,6 +110,8 @@ def define_motion_enc(gf_dim, init_type="mcnet", gpu_ids=[]):
 
     if len(gpu_ids) > 0:
         motion_enc.cuda(device_id=gpu_ids[0])
+
+    # pdb.set_trace()
 
     init_weights(motion_enc, init_type=init_type)
     return motion_enc
@@ -171,15 +182,16 @@ def define_dec_cnn(c_dim, gf_dim, init_type="mcnet", gpu_ids=[]):
 
 
 def fixed_unpooling(x):
-    x.permute(0, 2, 3, 1)
+    x = x.permute(0, 2, 3, 1)
 
-    out = torch.cat((x, torch.zeros_like(x)), dim=3)
-    out = torch.cat((out, torch.zeros_like(out)), dim =2)
+    out = torch.cat((x, torch.zeros(x.size())), dim=3)
+    out = torch.cat((out, torch.zeros(out.size())), dim=2)
 
     sh = x.size()
-    sh[1] *= 2
-    sh[2] *= 2
-    return out.view(sh[0], sh[1], sh[2], sh[3]).permute(0, 3, 1, 2)
+    s0, s1, s2, s3 = int(sh[0]), int(sh[1]), int(sh[2]), int(sh[3])
+    s1 *= 2
+    s2 *= 2
+    return out.view(s0, s1, s2, s3).permute(0, 3, 1, 2)
 
 
 def define_discriminator(img_size, c_dim, in_num, out_num, df_dim, init_type="mcnet", gpu_ids=[]):
@@ -197,7 +209,6 @@ def define_discriminator(img_size, c_dim, in_num, out_num, df_dim, init_type="mc
     return discriminator
 
 
-# TODO， look into this function
 def get_scheduler(optimizer, opt):
     if opt.lr_policy == 'lambda':
         def lambda_rule(epoch):
@@ -238,6 +249,8 @@ def define_convLstm_cell(feature_size, num_features, forget_bias=1, activation=F
     if len(gpu_ids) > 0:
         convLstm_cell.cuda(device_id=gpu_ids[0])
 
+    # pdb.set_trace()
+
     init_weights(convLstm_cell, init_type=init_type)
     return convLstm_cell
 
@@ -262,7 +275,7 @@ def define_generator(gf_dim, c_dim, feature_size, forget_bias=1, activation=F.ta
 
 
 class MotionEnc(nn.Module):
-    def __init__(self, c_dim, gf_dim, gpu_ids):
+    def __init__(self, gf_dim, gpu_ids):
         super(MotionEnc, self).__init__()
         self.gpu_ids = gpu_ids
 
@@ -327,7 +340,7 @@ class ContentEnc(nn.Module):
 
         pool1 = nn.MaxPool2d(2)
         conv2_1 = nn.Conv2d(gf_dim, gf_dim*2, 3, padding=1)
-        relu2_1 = nn.ReLu()
+        relu2_1 = nn.ReLU()
         conv2_2 = nn.Conv2d(gf_dim*2, gf_dim*2, 3, padding=1)
         relu2_2 = nn.ReLU()
         cont_conv2 = [pool1, conv2_1, relu2_1, conv2_2, relu2_2]
@@ -335,12 +348,13 @@ class ContentEnc(nn.Module):
 
         pool2 = nn.MaxPool2d(2)
         conv3_1 = nn.Conv2d(gf_dim * 2, gf_dim * 4, 3, padding=1)
-        relu3_1 = nn.ReLu()
+        relu3_1 = nn.ReLU()
         conv3_2 = nn.Conv2d(gf_dim * 4, gf_dim * 4, 3, padding=1)
         relu3_2 = nn.ReLU()
         conv3_3 = nn.Conv2d(gf_dim * 4, gf_dim * 4, 3, padding=1)
         relu3_3 = nn.ReLU()
         cont_conv3 = [pool2, conv3_1, relu3_1, conv3_2, relu3_2, conv3_3, relu3_3]
+
         self.cont_conv3 = nn.Sequential(*cont_conv3)
 
         self.pool3 = nn.MaxPool2d(2)
@@ -361,11 +375,12 @@ class ContentEnc(nn.Module):
             output = nn.parallel.data_parallel(self.pool3, res_in[-1], self.gpu_ids)
             return res_in, output
         else:
+            # pdb.set_trace()
             res_in.append(self.cont_conv1(raw))
             res_in.append(self.cont_conv2(res_in[-1]))
             res_in.append(self.cont_conv3(res_in[-1]))
             output = self.pool3(res_in[-1])
-            return res_in, output
+            return output, res_in
 
 
 class CombLayers(nn.Module):
@@ -375,15 +390,16 @@ class CombLayers(nn.Module):
 
         # torch.nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True)
         conv1 = nn.Conv2d(gf_dim * 8, gf_dim * 4, 3, padding=1)
-        relu1 = nn.ReLu()
+        relu1 = nn.ReLU()
         conv2 = nn.Conv2d(gf_dim * 4, gf_dim * 2, 3, padding=1)
         relu2 = nn.ReLU()
-        conv3 = nn.Conv2d(gf_dim * 4, gf_dim * 4, 3, padding=1)
-        relu3 = nn.ReLU
+        conv3 = nn.Conv2d(gf_dim * 2, gf_dim * 4, 3, padding=1)
+        relu3 = nn.ReLU()
         h_comb = [conv1, relu1, conv2, relu2, conv3, relu3]
         self.h_comb = nn.Sequential(*h_comb)
 
     def forward(self, h_dyn, h_cont):
+        # pdb.set_trace()
         input = torch.cat((h_dyn, h_cont), dim=1)
         if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
             return nn.parallel.data_parallel(self.h_comb, input, self.gpu_ids)
@@ -483,9 +499,10 @@ class Discriminator(nn.Module):
         bn3 = nn.BatchNorm2d(df_dim * 8, eps=0.001, momentum=0.001)
         lrelu3 = nn.LeakyReLU(0.2)
 
-        self.D = [conv0, lrelu0, conv1, bn1, lrelu1, conv2, bn2, lrelu2, conv3, bn3, lrelu3]
+        D = [conv0, lrelu0, conv1, bn1, lrelu1, conv2, bn2, lrelu2, conv3, bn3, lrelu3]
+        self.D = nn.Sequential(*D)
 
-        in_features = img_size[0]//16 * img_size[1]//16 * df_dim * 8
+        in_features = img_size//16 * img_size//16 * df_dim * 8
 
         # torch.nn.Linear(in_features, out_features, bias=True)
         self.linear = nn.Linear(in_features, 1)
@@ -500,7 +517,7 @@ class Discriminator(nn.Module):
             h_sigmoid = nn.parallel.data_parallel(self.sigmoid, h, self.gpu_ids)
             return h_sigmoid, h
         else:
-            D_output = self.D(input)
+            D_output = self.D(input.double())
             D_output.view(batch_size, -1)
             h = self.linear(D_output)
             h_sigmoid = self.sigmoid(h)
@@ -509,7 +526,7 @@ class Discriminator(nn.Module):
 
 class GDL(nn.Module):
     def __init__(self, gpu_ids):
-        super(Discriminator, self).__init__()
+        super(GDL, self).__init__()
         self.gpu_ids = gpu_ids
         self.loss = nn.L1Loss()
 
@@ -544,8 +561,8 @@ class ConvLstmCell(nn.Module):
         if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
             conv_output = nn.parallel.data_parallel(self.conv, conv_input)
         else:
-            conv_output = self.conv(input)
-        i, j, f, o = torch.chunk(conv_output, 4, dim=1)
+            conv_output = self.conv(conv_input)
+        (i, j, f, o) = torch.chunk(conv_output, 4, dim=1)
         new_c = c * F.sigmoid(f+self.forget_bias) + F.sigmoid(i) * self.activation(j)
         new_h = self.activation(new_c) * F.sigmoid(o)
         new_state = torch.cat((new_c, new_h), dim=1)
@@ -557,18 +574,20 @@ class Generator(nn.Module):
         self.gpu_ids = gpu_ids
         self.c_dim = c_dim
 
-        self.motion_enc = define_motion_enc(gf_dim, self.gpu_ids)  # an object of class MotionEnc
-        self.convLstm_cell = define_convLstm_cell(feature_size, 4 * gf_dim, self.gpu_ids, forget_bias=forget_bias, activation=activation, bias=bias)
-        self.content_enc = define_content_enc(c_dim, gf_dim, self.gpu_ids)
-        self.comb_layers = define_comb_layers(gf_dim, self.gpu_ids)
-        self.residual3 = define_residual(gf_dim * 4, self.gpu_ids)
-        self.residual2 = define_residual(gf_dim * 2, self.gpu_ids)
-        self.residual1 = define_residual(gf_dim * 1, self.gpu_ids)
-        self.dec_cnn = define_dec_cnn(gf_dim, self.gpu_ids)
+        self.motion_enc = define_motion_enc(gf_dim, gpu_ids=self.gpu_ids)  # an object of class MotionEnc
+        #  define_convLstm_cell(feature_size, num_features, forget_bias=1, activation=F.tanh, gpu_ids=[], init_type="mcnet", bias=True)
+        self.convLstm_cell = define_convLstm_cell(feature_size, 4 * gf_dim, gpu_ids=self.gpu_ids, forget_bias=forget_bias, activation=activation, bias=bias)
+        self.content_enc = define_content_enc(c_dim, gf_dim, gpu_ids=self.gpu_ids)
+        self.comb_layers = define_comb_layers(gf_dim, gpu_ids=self.gpu_ids)
+        self.residual3 = define_residual(gf_dim * 4, gpu_ids=self.gpu_ids)
+        self.residual2 = define_residual(gf_dim * 2, gpu_ids=self.gpu_ids)
+        self.residual1 = define_residual(gf_dim * 1, gpu_ids=self.gpu_ids)
+        self.dec_cnn = define_dec_cnn(c_dim, gf_dim, gpu_ids=self.gpu_ids)
 
     def forward(self, K, T, state, batch_size, image_size, diff_in, targets):
+        # pdb.set_trace()
         for t in range(K-1):
-            enc_h, res_m = self.motion_enc.foward(diff_in[t])
+            enc_h, res_m = self.motion_enc.forward(diff_in[t])
             h_dyn, state = self.convLstm_cell.forward(enc_h, state)
 
         xt = targets[K - 1]
@@ -576,7 +595,7 @@ class Generator(nn.Module):
         pred = []
         for t in range(T):
             if t > 0:
-                enc_h, res_m = self.motion_enc.foward(diff_in[-1])
+                enc_h, res_m = self.motion_enc.forward(diff_in[-1])
                 h_dyn, state = self.convLstm_cell.forward(enc_h, state)
             h_cont, res_c = self.content_enc.forward(xt)
             h_tpl = self.comb_layers.forward(h_dyn, h_cont)
@@ -585,15 +604,15 @@ class Generator(nn.Module):
             res_3 = self.residual3.forward(res_m[2], res_c[2])
             x_hat = self.dec_cnn.forward(res_1, res_2, res_3, h_tpl)
 
-            if self.opt.c_dim == 3:
+            if self.c_dim == 3:
                 x_hat_gray = bgr2gray(inverse_transform(x_hat))
                 xt_gray = bgr2gray(inverse_transform(xt))
             else:
                 x_hat_gray = inverse_transform(x_hat)
                 xt_gray = inverse_transform(xt)
 
-            self.diff_in.append(x_hat_gray - xt_gray)
+            diff_in.append(x_hat_gray - xt_gray)
             xt = x_hat
-            pred.append(x_hat.view(batch_size, self.c_dim, image_size[0], image_size[1]))
+            pred.append(x_hat.view(batch_size, self.c_dim, image_size, image_size))
 
         return pred

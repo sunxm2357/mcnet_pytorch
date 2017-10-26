@@ -19,7 +19,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--margin', type=float, default=0.3, help="the margin used for choosing opt D or G")
         self.parser.add_argument('--nepoch', type=int, default=100, help='# of epoch at starting learning rate')
         self.parser.add_argument('--nepoch_decay', type=int, default=100, help='# of epoch to linearly decay learning rate to zero')
-
+        self.parser.add_argument('--model', type=str, default='mcnet', help='the model to run')
 
         # Data Augment
         self.parser.add_argument('--train_data', required=True, type=str, help="name of training dataset [KTH]")

@@ -4,9 +4,9 @@ import os
 from collections import OrderedDict
 from torch.autograd import Variable
 import util.util as util
-from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
+import pdb
 
 
 class McnetModel(BaseModel):
@@ -22,14 +22,14 @@ class McnetModel(BaseModel):
         self.T = opt.T
         self.targets = [] # first K-1 are diff, the last one is raw
         for i in range(self.K+self.T):
-            self.inputs.append(self.Tensor(opt.batch_size, opt.c_dim, opt.image_size[0], opt.image_size[1]))
+            self.targets.append(self.Tensor(opt.batch_size, opt.c_dim, opt.image_size, opt.image_size))
 
         self.diff_in = []
         for i in range(self.K-1):
-            self.targets.append(self.Tensor(opt.batch_size, 1, opt.image_size[0], opt.image_size[1]))
+            self.diff_in.append(self.Tensor(opt.batch_size, 1, opt.image_size, opt.image_size))
 
         # define submodules in G
-        self.generator = networks.define_generator(opt.gf_dim, opt.c_dim, 3, self.gpu_ids)
+        self.generator = networks.define_generator(opt.gf_dim, opt.c_dim, 3, gpu_ids=self.gpu_ids)
         # self.motion_enc = networks.define_motion_enc(opt.gf_dim, self.gpu_ids) # an object of class MotionEnc
         # self.convLstm_cell = networks.define_convLstm_cell(3, 4 * opt.gf_dim, self.gpu_ids)
         # self.content_enc=networks.define_content_enc(opt.c_dim, opt.gf_dim, self.gpu_ids)
@@ -40,13 +40,13 @@ class McnetModel(BaseModel):
         # self.dec_cnn = networks.define_dec_cnn(opt.gf_dim, self.gpu_ids)
 
 
-        if self.is_train():
-            self.discriminator = networks.define_discriminator(opt.image_size, opt.c_dim, in_num, out_num, opt.df_dim, self.gpu_ids)
+        if self.is_train:
+            self.discriminator = networks.define_discriminator(opt.image_size, opt.c_dim, self.K, self.T, opt.df_dim, gpu_ids=self.gpu_ids)
 
         # load pretrained model
-        if not self.isTrain or opt.continue_train:
+        if not self.is_train or opt.continue_train:
             self.load_network(self.generator, 'generator', opt.which_epoch)
-            if self.isTrain:
+            if self.is_train:
                 self.load_network(self.discriminator, 'discriminator', opt.which_epoch)
 
         if self.is_train:
@@ -76,8 +76,8 @@ class McnetModel(BaseModel):
             self.updateG = True
 
     def set_inputs(self, input):
-        targets = torch.from_numpy(input["targets"]) # shape[-1] = K+T
-        diff_in = torch.from_numpy(input["diff_in"]) # shape[-1] = K-1
+        targets = input["targets"] # shape[-1] = K+T
+        diff_in = input["diff_in"] # shape[-1] = K-1
         #  if opt.task == "infill":
         #     future = torch.from_numpy(input["future"])
         #     diff_future = torch.from_numpy(input["diff_future"])
@@ -88,11 +88,14 @@ class McnetModel(BaseModel):
             self.diff_in.append(Variable(diff_in[:, :, :, :, i]))
 
         for i in range(self.K + self.T):
-            self.targets.append(Variable(Variable(targets[:, :, :, :, i])))
+            self.targets.append(Variable(targets[:, :, :, :, i]))
+
+        # pdb.set_trace()
 
     def forward(self):
-        state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size[0]/8, self.opt.image_size[1]/8))
+        state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8))
         self.pred = self.generator.forward(self.K, self.T, state, self.opt.batch_size, self.opt.image_size, self.diff_in, self.targets)
+        pdb.set_trace()
         # # Encoder
         # for t in range(self.K-1):
         #     enc_h, res_m = self.motion_enc.foward(self.diff_in[t])
@@ -126,13 +129,13 @@ class McnetModel(BaseModel):
         # fake
         input_fake = torch.cat(self.targets[:self.K] + self.pred, dim=1)
         h_sigmoid, h = self.discriminator.forward(input_fake, self.opt.batch_size)
-        labels = Variable(torch.zeros_like(h))
+        labels = Variable(torch.zeros(h.size()))
         self.loss_d_fake = self.loss_d(h_sigmoid, labels)
 
         # real
         input_real = self.targets
         h_sigmoid_, h_ = self.discriminator.forward(input_real, self.opt.batch_size)
-        labels = Variable(torch.ones_like(h_))
+        labels = Variable(torch.ones(h_.size()))
         self.loss_d_real = self.loss_d(h_sigmoid_, labels)
 
 
@@ -143,7 +146,7 @@ class McnetModel(BaseModel):
     def backward_G(self):
         input_fake = torch.cat(self.targets[:self.K] + self.pred, dim=1)
         h_sigmoid, h = self.discriminator.forward(input_fake, self.opt.batch_size)
-        labels = Variable(torch.ones_like(h))
+        labels = Variable(torch.ones(h.size()))
         self.L_GAN = self.loss_d(h_sigmoid, labels)
 
         outputs = networks.inverse_transform(torch.cat(self.pred, dim=0))
