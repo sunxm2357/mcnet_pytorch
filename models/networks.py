@@ -184,8 +184,8 @@ def define_dec_cnn(c_dim, gf_dim, init_type="mcnet", gpu_ids=[]):
 def fixed_unpooling(x):
     x = x.permute(0, 2, 3, 1)
 
-    out = torch.cat((x, torch.zeros(x.size())), dim=3)
-    out = torch.cat((out, torch.zeros(out.size())), dim=2)
+    out = torch.cat((x, Variable(torch.zeros(x.size()))), dim=3)
+    out = torch.cat((out, Variable(torch.zeros(out.size()))), dim=2)
 
     sh = x.size()
     s0, s1, s2, s3 = int(sh[0]), int(sh[1]), int(sh[2]), int(sh[3])
@@ -224,13 +224,13 @@ def get_scheduler(optimizer, opt):
     return scheduler
 
 
-def define_gdl(gpu_ids=[]):
+def define_gdl(c_dim, gpu_ids=[]):
     use_gpu = len(gpu_ids) > 0
 
     if use_gpu:
         assert (torch.cuda.is_available())
 
-    gdl = GDL(gpu_ids)
+    gdl = GDL(c_dim, gpu_ids)
 
     if len(gpu_ids) > 0:
         gdl.cuda(device_id=gpu_ids[0])
@@ -375,7 +375,6 @@ class ContentEnc(nn.Module):
             output = nn.parallel.data_parallel(self.pool3, res_in[-1], self.gpu_ids)
             return res_in, output
         else:
-            # pdb.set_trace()
             res_in.append(self.cont_conv1(raw))
             res_in.append(self.cont_conv2(res_in[-1]))
             res_in.append(self.cont_conv3(res_in[-1]))
@@ -399,7 +398,6 @@ class CombLayers(nn.Module):
         self.h_comb = nn.Sequential(*h_comb)
 
     def forward(self, h_dyn, h_cont):
-        # pdb.set_trace()
         input = torch.cat((h_dyn, h_cont), dim=1)
         if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
             return nn.parallel.data_parallel(self.h_comb, input, self.gpu_ids)
@@ -512,33 +510,39 @@ class Discriminator(nn.Module):
     def forward(self, input, batch_size):
         if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
             D_output = nn.parallel.data_parallel(self.D, input, self.gpu_ids)
-            D_output.view(batch_size, -1)
+            D_output = D_output.view(batch_size, -1)
             h = nn.parallel.data_parallel(self.linear, D_output, self.gpu_ids)
             h_sigmoid = nn.parallel.data_parallel(self.sigmoid, h, self.gpu_ids)
             return h_sigmoid, h
         else:
-            D_output = self.D(input.double())
-            D_output.view(batch_size, -1)
+            D_output = self.D(input)
+            D_output = D_output.view(batch_size, -1)
             h = self.linear(D_output)
             h_sigmoid = self.sigmoid(h)
             return h_sigmoid, h
 
 
 class GDL(nn.Module):
-    def __init__(self, gpu_ids):
+    def __init__(self, c_dim, gpu_ids):
         super(GDL, self).__init__()
         self.gpu_ids = gpu_ids
         self.loss = nn.L1Loss()
+        a = np.array([[-1, 1]])
+        b = np.array([[1], [-1]])
+        filter_w = np.zeros([c_dim, c_dim, 1, 2])
+        filter_h = np.zeros([c_dim, c_dim, 2, 1])
+        for i in range(c_dim):
+            filter_w[i, i, :, :] = a
+            filter_h[i, i, :, :] = b
+        self.filter_w = Variable(torch.from_numpy(filter_w).float())
+        self.filter_h = Variable(torch.from_numpy(filter_h).float())
 
     def __call__(self, output, target):
-        a = np.array([[-1, 1]])
-        b = np.array([[1],[-1]])
-        filter_w = Variable(torch.from_numpy(a))
-        filter_h = Variable(torch.from_numpy(b))
-        output_w = F.conv2d(output, filter_w, padding=(0, 1))
-        output_h = F.conv2d(output, filter_h, padding=(1, 0))
-        target_w = F.conv2d(target, filter_w, padding=(0, 1))
-        target_h = F.conv2d(target, filter_h, padding=(1, 0))
+        # pdb.set_trace()
+        output_w = F.conv2d(output, self.filter_w, padding=(0, 1))
+        output_h = F.conv2d(output, self.filter_h, padding=(1, 0))
+        target_w = F.conv2d(target, self.filter_w, padding=(0, 1))
+        target_h = F.conv2d(target, self.filter_h, padding=(1, 0))
         return self.loss(output_w, target_w) + self.loss(output_h, target_h)
 
 
@@ -585,7 +589,6 @@ class Generator(nn.Module):
         self.dec_cnn = define_dec_cnn(c_dim, gf_dim, gpu_ids=self.gpu_ids)
 
     def forward(self, K, T, state, batch_size, image_size, diff_in, targets):
-        # pdb.set_trace()
         for t in range(K-1):
             enc_h, res_m = self.motion_enc.forward(diff_in[t])
             h_dyn, state = self.convLstm_cell.forward(enc_h, state)

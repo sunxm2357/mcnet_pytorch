@@ -51,9 +51,9 @@ class McnetModel(BaseModel):
 
         if self.is_train:
             # define loss
-            self.loss_d = torch.nn.CrossEntropyLoss()
+            self.loss_d = torch.nn.BCELoss()
             self.loss_Lp = torch.nn.MSELoss()
-            self.loss_gdl = networks.define_gdl(self.gpu_ids)
+            self.loss_gdl = networks.define_gdl(opt.c_dim, self.gpu_ids)
 
             # initialize optimizers
             self.schedulers = []
@@ -95,7 +95,7 @@ class McnetModel(BaseModel):
     def forward(self):
         state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8))
         self.pred = self.generator.forward(self.K, self.T, state, self.opt.batch_size, self.opt.image_size, self.diff_in, self.targets)
-        pdb.set_trace()
+        # pdb.set_trace()
         # # Encoder
         # for t in range(self.K-1):
         #     enc_h, res_m = self.motion_enc.foward(self.diff_in[t])
@@ -127,18 +127,19 @@ class McnetModel(BaseModel):
 
     def backward_D(self):
         # fake
+        # pdb.set_trace()
         input_fake = torch.cat(self.targets[:self.K] + self.pred, dim=1)
-        h_sigmoid, h = self.discriminator.forward(input_fake, self.opt.batch_size)
+        h_sigmoid, h = self.discriminator.forward(input_fake.detach(), self.opt.batch_size)
         labels = Variable(torch.zeros(h.size()))
         self.loss_d_fake = self.loss_d(h_sigmoid, labels)
 
         # real
-        input_real = self.targets
+        input_real = torch.cat(self.targets, dim=1)
         h_sigmoid_, h_ = self.discriminator.forward(input_real, self.opt.batch_size)
         labels = Variable(torch.ones(h_.size()))
         self.loss_d_real = self.loss_d(h_sigmoid_, labels)
 
-
+        # pdb.set_trace()
         self.loss_D = self.loss_d_fake + self.loss_d_real
 
         self.loss_D.backward()
@@ -152,6 +153,7 @@ class McnetModel(BaseModel):
         outputs = networks.inverse_transform(torch.cat(self.pred, dim=0))
         targets = networks.inverse_transform(torch.cat(self.targets[self.K:], dim=0))
         self.Lp = self.loss_Lp(outputs, targets)
+        # pdb.set_trace()
         self.gdl = self.loss_gdl(outputs, targets)
 
         self.loss_G = self.opt.alpha * (self.Lp + self.gdl) + self.opt.beta * self.L_GAN
@@ -161,7 +163,6 @@ class McnetModel(BaseModel):
 
     def optimize_parameters(self):
         self.forward()
-
         if self.updateD:
             self.optimizer_D.zero_grad()
             self.backward_D()
@@ -172,10 +173,12 @@ class McnetModel(BaseModel):
             self.backward_G()
             self.optimizer_G.step()
 
-        if self.loss_d_fake < self.opt.margin or self.loss_d_real < self.opt.margin:
+        pdb.set_trace()
+
+        if self.loss_d_fake.data[0] < self.opt.margin or self.loss_d_real.data[0] < self.opt.margin:
             self.updateD = False
 
-        if self.loss_d_fake > (1.- self.opt.margin) or self.loss_d_real > (1.- self.opt.margin):
+        if self.loss_d_fake.data[0] > (1. - self.opt.margin) or self.loss_d_real.data[0] > (1.- self.opt.margin):
             self.updateG = False
 
         if not self.updateD and not self.updateG:
