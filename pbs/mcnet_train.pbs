@@ -1,0 +1,30 @@
+#PBS -S /bin/bash
+#PBS -N Mcnet_kth
+#PBS -l nodes=1:ppn=2:gpus=1
+#PBS -l mem=50GB
+#PBS -l qos=flux
+#PBS -M sunxm@umich.edu
+#PBS -m abe
+#PBS -l walltime=10000:00:00
+#PBS -j eo
+#PBS -V
+
+cd /z/home/sunxm/
+export PATH=/z/sw/bin/:/z/sw/sbin/:$PATH
+export LD_LIBRARY_PATH=/z/sw/lib/:$LD_LIBRARY_PATH
+export MANPATH=/z/sw/share/man/:$MANPATH
+source /z/home/sunxm/masknew/bin/activate
+
+
+cd /z/home/sunxm/
+. moduleload.sh
+
+module list
+
+cd Documents/McNet_pytorch
+
+python train.py --debug=True --nepoch=10 --nepoch_decay=0 --train_data=KTH --gpu_ids=${allocatedgpus[0]} --c_dim=1 --dataroot=../data/KTH/ --nThreads=1 --K=5 --T=1 --name=kth_debug_5_1 
+
+
+
+

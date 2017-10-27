@@ -1,6 +1,8 @@
 import numpy as np
 import os
 import time
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import cv2
 from util import *
