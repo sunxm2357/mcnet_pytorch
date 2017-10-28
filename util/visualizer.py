@@ -53,7 +53,7 @@ class Visualizer():
         video_folder = os.path.join(self.video_dir, 'epoch%s_iter%s' % (epoch, iter))
         makedir(video_folder)
         for i in range(self.batch_size):
-            title = video_name[i].split('.')
+            title = video_name[i].split('.')[0]
             single_video = os.path.join(video_folder, title)
             makedir(single_video)
             for key in visuals.keys():

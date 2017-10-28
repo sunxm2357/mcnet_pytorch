@@ -62,6 +62,27 @@ def weights_init_orthogonal(m):
         init.uniform(m.weight.data, 1.0, 0.02)
         init.constant(m.bias.data, 0.0)
 
+def weights_init_zeros(m):
+    classname = m.__class__.__name__
+    print(classname)
+    # pdb.set_trace()
+    if classname.find('Conv') != -1 and classname != 'ConvLstmCell':
+        # init.xavier_normal(m.weight.data, gain=1)
+        init.uniform(m.weight.data, 0.0, 0.02)
+        init.constant(m.bias.data, 0.0)
+        # m.weight.data = m.weight.data.double()
+        # m.bias.data = m.bias.data.double()
+        # pdb.set_trace()
+    elif classname.find('Linear') != -1:
+        init.uniform(m.weight.data, 0.0, 0.02)
+        init.constant(m.bias.data, 0.0)
+        # m.weight.data = m.weight.data.double()
+    elif classname.find('BatchNorm2d') != -1:
+        init.uniform(m.weight.data, 1.0, 0.02)
+        init.constant(m.bias.data, 0.0)
+        # m.weight.data = m.weight.data.double()
+        # m.bias.data = m.bias.data.double()
+
 
 def weights_init_mcnet(m):
     classname = m.__class__.__name__
@@ -69,11 +90,14 @@ def weights_init_mcnet(m):
     # pdb.set_trace()
     if classname.find('Conv') != -1 and classname != 'ConvLstmCell':
         init.xavier_normal(m.weight.data, gain=1)
+        # init.constant(m.weight.data, 0.0)
+        init.constant(m.bias.data, 0.0)
         # m.weight.data = m.weight.data.double()
         # m.bias.data = m.bias.data.double()
         # pdb.set_trace()
     elif classname.find('Linear') != -1:
         init.uniform(m.weight.data, 0.0, 0.02)
+        init.constant(m.bias.data, 0.0)
         # m.weight.data = m.weight.data.double()
     elif classname.find('BatchNorm2d') != -1:
         init.uniform(m.weight.data, 1.0, 0.02)
@@ -95,6 +119,8 @@ def init_weights(net, init_type='normal'):
         net.apply(weights_init_orthogonal)
     elif init_type == 'mcnet':
         net.apply(weights_init_mcnet)
+    elif init_type == 'zeros':
+        net.apply(weights_init_zeros)
     else:
         raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
 
@@ -181,11 +207,14 @@ def define_dec_cnn(c_dim, gf_dim, init_type="mcnet", gpu_ids=[]):
     return dec_cnn
 
 
-def fixed_unpooling(x):
+def fixed_unpooling(x, gpu_ids):
     x = x.permute(0, 2, 3, 1)
-
-    out = torch.cat((x, Variable(torch.zeros(x.size()))), dim=3)
-    out = torch.cat((out, Variable(torch.zeros(out.size()))), dim=2)
+    if len(gpu_ids)>0:
+        out = torch.cat((x, Variable(torch.zeros(x.size())).cuda()), dim=3)
+        out = torch.cat((out, Variable(torch.zeros(out.size())).cuda()), dim=2)
+    else:
+        out = torch.cat((x, Variable(torch.zeros(x.size()))), dim=3)
+        out = torch.cat((out, Variable(torch.zeros(out.size()))), dim=2)
 
     sh = x.size()
     s0, s1, s2, s3 = int(sh[0]), int(sh[1]), int(sh[2]), int(sh[3])
@@ -205,7 +234,7 @@ def define_discriminator(img_size, c_dim, in_num, out_num, df_dim, init_type="mc
     if len(gpu_ids) > 0:
         discriminator.cuda(device_id=gpu_ids[0])
 
-    init_weights(discriminator, init_type=init_type)
+    init_weights(discriminator, init_type='zeros')
     return discriminator
 
 
@@ -310,12 +339,12 @@ class MotionEnc(nn.Module):
         """
         res_in = []
 
-        if self.gpu_ids and isinstance(input_diff.data, torch.cuda.FloatTensor):
+        if len(self.gpu_ids) > 0 and isinstance(input_diff.data, torch.cuda.FloatTensor):
             res_in.append(nn.parallel.data_parallel(self.dyn_conv1, input_diff, self.gpu_ids))
             res_in.append(nn.parallel.data_parallel(self.dyn_conv2, res_in[-1], self.gpu_ids))
             res_in.append(nn.parallel.data_parallel(self.dyn_conv3, res_in[-1], self.gpu_ids))
             output = nn.parallel.data_parallel(self.pool3, res_in[-1], self.gpu_ids)
-            return res_in, output
+            return output, res_in
         else:
             res_in.append(self.dyn_conv1(input_diff))
             res_in.append(self.dyn_conv2(res_in[-1]))
@@ -368,12 +397,12 @@ class ContentEnc(nn.Module):
         output: [batch_size, gf_dim*4, h/8, w/8]
         """
         res_in = []
-        if self.gpu_ids and isinstance(raw.data, torch.cuda.FloatTensor):
+        if len(self.gpu_ids) > 0 and isinstance(raw.data, torch.cuda.FloatTensor):
             res_in.append(nn.parallel.data_parallel(self.cont_conv1, raw, self.gpu_ids))
             res_in.append(nn.parallel.data_parallel(self.cont_conv2, res_in[-1], self.gpu_ids))
             res_in.append(nn.parallel.data_parallel(self.cont_conv3, res_in[-1], self.gpu_ids))
             output = nn.parallel.data_parallel(self.pool3, res_in[-1], self.gpu_ids)
-            return res_in, output
+            return output, res_in
         else:
             res_in.append(self.cont_conv1(raw))
             res_in.append(self.cont_conv2(res_in[-1]))
@@ -399,7 +428,7 @@ class CombLayers(nn.Module):
 
     def forward(self, h_dyn, h_cont):
         input = torch.cat((h_dyn, h_cont), dim=1)
-        if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+        if len(self.gpu_ids) > 0 and isinstance(input.data, torch.cuda.FloatTensor):
             return nn.parallel.data_parallel(self.h_comb, input, self.gpu_ids)
         else:
             return self.h_comb(input)
@@ -419,7 +448,7 @@ class Residual(nn.Module):
 
     def forward(self, input_dyn, input_cont):
         input = torch.cat((input_dyn, input_cont), dim=1)
-        if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+        if len(self.gpu_ids)>0 and isinstance(input.data, torch.cuda.FloatTensor):
             return nn.parallel.data_parallel(self.res, input, self.gpu_ids)
         else:
             return self.res(input)
@@ -455,20 +484,20 @@ class DecCnn(nn.Module):
         self.dec1 = nn.Sequential(*dec1)
 
     def forward(self, res1, res2, res3, comb):
-        if self.gpu_ids and isinstance(res1.data, torch.cuda.FloatTensor):
-            input3 = fixed_unpooling(comb) + res3
+        if len(self.gpu_ids)>0 and isinstance(res1.data, torch.cuda.FloatTensor):
+            input3 = fixed_unpooling(comb, self.gpu_ids) + res3
             dec3_out = nn.parallel.data_parallel(self.dec3, input3, self.gpu_ids)
-            input2 = fixed_unpooling(dec3_out) + res2
+            input2 = fixed_unpooling(dec3_out, self.gpu_ids) + res2
             dec2_out = nn.parallel.data_parallel(self.dec2, input2, self.gpu_ids)
-            input1 = fixed_unpooling(dec2_out) + res1
+            input1 = fixed_unpooling(dec2_out, self.gpu_ids) + res1
             dec1_out = nn.parallel.data_parallel(self.dec1, input1, self.gpu_ids)
             return dec1_out
         else:
-            input3 = fixed_unpooling(comb) + res3
+            input3 = fixed_unpooling(comb, self.gpu_ids) + res3
             dec3_out = self.dec3(input3)
-            input2 = fixed_unpooling(dec3_out) + res2
+            input2 = fixed_unpooling(dec3_out, self.gpu_ids) + res2
             dec2_out = self.dec2(input2)
-            input1 = fixed_unpooling(dec2_out) + res1
+            input1 = fixed_unpooling(dec2_out, self.gpu_ids) + res1
             dec1_out = self.dec1(input1)
             return dec1_out
 
@@ -484,17 +513,20 @@ class Discriminator(nn.Module):
 
         conv1 = nn.Conv2d(df_dim, df_dim * 2, 4, stride=2, padding=1)
         # torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True)
-        bn1 = nn.BatchNorm2d(df_dim * 2, eps=0.001, momentum=0.001)
+        # bn1 = nn.BatchNorm2d(df_dim * 2, eps=0.001, momentum=0.1)
+        bn1 = nn.BatchNorm2d(df_dim * 2)
         lrelu1 = nn.LeakyReLU(0.2)
 
         conv2 = nn.Conv2d(df_dim * 2, df_dim * 4, 4, stride=2, padding=1)
         # torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True)
-        bn2 = nn.BatchNorm2d(df_dim * 4, eps=0.001, momentum=0.001)
+        # bn2 = nn.BatchNorm2d(df_dim * 4, eps=0.001, momentum=0.1)
+        bn2 = nn.BatchNorm2d(df_dim * 4)
         lrelu2 = nn.LeakyReLU(0.2)
 
         conv3 = nn.Conv2d(df_dim * 4, df_dim * 8, 4, stride=2, padding=1)
         # torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True)
-        bn3 = nn.BatchNorm2d(df_dim * 8, eps=0.001, momentum=0.001)
+        # bn3 = nn.BatchNorm2d(df_dim * 8, eps=0.001, momentum=0.1)
+        bn3 = nn.BatchNorm2d(df_dim * 8)
         lrelu3 = nn.LeakyReLU(0.2)
 
         D = [conv0, lrelu0, conv1, bn1, lrelu1, conv2, bn2, lrelu2, conv3, bn3, lrelu3]
@@ -508,7 +540,7 @@ class Discriminator(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, input, batch_size):
-        if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+        if len(self.gpu_ids)>0 and isinstance(input.data, torch.cuda.FloatTensor):
             D_output = nn.parallel.data_parallel(self.D, input, self.gpu_ids)
             D_output = D_output.view(batch_size, -1)
             h = nn.parallel.data_parallel(self.linear, D_output, self.gpu_ids)
@@ -529,20 +561,25 @@ class GDL(nn.Module):
         self.loss = nn.L1Loss()
         a = np.array([[-1, 1]])
         b = np.array([[1], [-1]])
-        filter_w = np.zeros([c_dim, c_dim, 1, 2])
-        filter_h = np.zeros([c_dim, c_dim, 2, 1])
+        self.filter_w = np.zeros([c_dim, c_dim, 1, 2])
+        self.filter_h = np.zeros([c_dim, c_dim, 2, 1])
         for i in range(c_dim):
-            filter_w[i, i, :, :] = a
-            filter_h[i, i, :, :] = b
-        self.filter_w = Variable(torch.from_numpy(filter_w).float())
-        self.filter_h = Variable(torch.from_numpy(filter_h).float())
+            self.filter_w[i, i, :, :] = a
+            self.filter_h[i, i, :, :] = b
+        
 
     def __call__(self, output, target):
         # pdb.set_trace()
-        output_w = F.conv2d(output, self.filter_w, padding=(0, 1))
-        output_h = F.conv2d(output, self.filter_h, padding=(1, 0))
-        target_w = F.conv2d(target, self.filter_w, padding=(0, 1))
-        target_h = F.conv2d(target, self.filter_h, padding=(1, 0))
+        if len(self.gpu_ids) > 0:
+            filter_w = Variable(torch.from_numpy(self.filter_w).float().cuda())
+            filter_h = Variable(torch.from_numpy(self.filter_h).float().cuda())
+        else:
+            filter_w = Variable(torch.from_numpy(self.filter_w).float())
+            filter_h = Variable(torch.from_numpy(self.filter_h).float())
+        output_w = F.conv2d(output, filter_w, padding=(0, 1))
+        output_h = F.conv2d(output, filter_h, padding=(1, 0))
+        target_w = F.conv2d(target, filter_w, padding=(0, 1))
+        target_h = F.conv2d(target, filter_h, padding=(1, 0))
         return self.loss(output_w, target_w) + self.loss(output_h, target_h)
 
 
@@ -561,8 +598,8 @@ class ConvLstmCell(nn.Module):
 
     def forward(self, input, state):
         c, h = torch.chunk(state, 2, dim=1)
-        conv_input = torch.cat((input, h), dim=1)
-        if self.gpu_ids and isinstance(input.data, torch.cuda.FloatTensor):
+        conv_input = torch.cat((input, h) , dim=1)
+        if len(self.gpu_ids)>0 and isinstance(input.data, torch.cuda.FloatTensor):
             conv_output = nn.parallel.data_parallel(self.conv, conv_input)
         else:
             conv_output = self.conv(conv_input)
@@ -591,6 +628,10 @@ class Generator(nn.Module):
     def forward(self, K, T, state, batch_size, image_size, diff_in, targets):
         for t in range(K-1):
             enc_h, res_m = self.motion_enc.forward(diff_in[t])
+            # print('type of enc_h:', type(enc_h))
+            # print('len of enc_h', len(enc_h))
+            # print('enc_h[0]', enc_h[0])
+            # print('enc_h[1]', enc_h[1])
             h_dyn, state = self.convLstm_cell.forward(enc_h, state)
 
         xt = targets[K - 1]

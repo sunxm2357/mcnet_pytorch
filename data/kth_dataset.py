@@ -28,6 +28,7 @@ class KthDataset(BaseDataset):
         self.flip = opt.flip # T/F
         self.pick_mode = opt.pick_mode
         self.image_size = opt.image_size
+        self.gpu_ids = opt.gpu_ids
         if self.debug:
             self.backwards = False
             self.flip = False

@@ -20,6 +20,13 @@ class McnetModel(BaseModel):
         # define tensor
         self.K = opt.K
         self.T = opt.T
+
+        if len(opt.gpu_ids) > 0:
+            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8).cuda(), requires_grad=False)
+        else:
+            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8), requires_grad=False)
+
+
         self.targets = [] # first K-1 are diff, the last one is raw
         for i in range(self.K+self.T):
             self.targets.append(self.Tensor(opt.batch_size, opt.c_dim, opt.image_size, opt.image_size))
@@ -75,6 +82,8 @@ class McnetModel(BaseModel):
             self.updateD = True
             self.updateG = True
 
+
+
     def set_inputs(self, input):
         targets = input["targets"] # shape[-1] = K+T
         diff_in = input["diff_in"] # shape[-1] = K-1
@@ -84,17 +93,30 @@ class McnetModel(BaseModel):
         #     self.input_G_future = []
         self.diff_in = []
         self.targets = []
-        for i in range(self.K - 1):
-            self.diff_in.append(Variable(diff_in[:, :, :, :, i]))
-
-        for i in range(self.K + self.T):
-            self.targets.append(Variable(targets[:, :, :, :, i]))
+        if self.gpu_ids:
+            for i in range(self.K - 1):
+                self.diff_in.append(Variable(diff_in[:, :, :, :, i].cuda()))
+                if not self.updateG:
+                    self.diff_in[-1].volatile = True
+            for i in range(self.K + self.T):
+                self.targets.append(Variable(targets[:, :, :, :, i].cuda()))
+                if not self.updateG:
+                    self.targets[-1].volatile = True
+        else:
+            for i in range(self.K - 1):
+                self.diff_in.append(Variable(diff_in[:, :, :, :, i]))
+                if not self.updateG:
+                    self.diff_in[-1].volatile = True
+            for i in range(self.K + self.T):
+                self.targets.append(Variable(targets[:, :, :, :, i]))
+                if not self.updateG:
+                    self.targets[-1].volatile = True
 
         # pdb.set_trace()
 
     def forward(self):
-        state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8))
-        self.pred = self.generator.forward(self.K, self.T, state, self.opt.batch_size, self.opt.image_size, self.diff_in, self.targets)
+        # state = Variable(self.state)
+        self.pred = self.generator.forward(self.K, self.T, self.state, self.opt.batch_size, self.opt.image_size, self.diff_in, self.targets)
         # pdb.set_trace()
         # # Encoder
         # for t in range(self.K-1):
@@ -129,15 +151,25 @@ class McnetModel(BaseModel):
         # fake
         # pdb.set_trace()
         input_fake = torch.cat(self.targets[:self.K] + self.pred, dim=1)
-        h_sigmoid, h = self.discriminator.forward(input_fake.detach(), self.opt.batch_size)
-        labels = Variable(torch.zeros(h.size()))
+        input_fake_ = Variable(input_fake.data)
+        h_sigmoid, h = self.discriminator.forward(input_fake_, self.opt.batch_size)
+        # print('in fake, h:', h)
+        if len(self.gpu_ids) > 0:
+            labels = Variable(torch.zeros(h.size()).cuda())
+        else:
+            labels = Variable(torch.zeros(h.size()))
         self.loss_d_fake = self.loss_d(h_sigmoid, labels)
 
         # real
         input_real = torch.cat(self.targets, dim=1)
-        h_sigmoid_, h_ = self.discriminator.forward(input_real, self.opt.batch_size)
-        labels = Variable(torch.ones(h_.size()))
-        self.loss_d_real = self.loss_d(h_sigmoid_, labels)
+        input_real_ = Variable(input_real.data)
+        h_sigmoid_, h_ = self.discriminator.forward(input_real_, self.opt.batch_size)
+        # print('in real, h:', h_)
+        if len(self.gpu_ids) > 0:
+            labels_ = Variable(torch.ones(h_.size()).cuda())
+        else:
+            labels_ = Variable(torch.ones(h_.size()))
+        self.loss_d_real = self.loss_d(h_sigmoid_, labels_)
 
         # pdb.set_trace()
         self.loss_D = self.loss_d_fake + self.loss_d_real
@@ -147,7 +179,10 @@ class McnetModel(BaseModel):
     def backward_G(self):
         input_fake = torch.cat(self.targets[:self.K] + self.pred, dim=1)
         h_sigmoid, h = self.discriminator.forward(input_fake, self.opt.batch_size)
-        labels = Variable(torch.ones(h.size()))
+        if len(self.gpu_ids) > 0:
+            labels = Variable(torch.ones(h.size()).cuda())
+        else:
+            labels = Variable(torch.ones(h.size()))
         self.L_GAN = self.loss_d(h_sigmoid, labels)
 
         outputs = networks.inverse_transform(torch.cat(self.pred, dim=0))
@@ -158,48 +193,68 @@ class McnetModel(BaseModel):
 
         self.loss_G = self.opt.alpha * (self.Lp + self.gdl) + self.opt.beta * self.L_GAN
 
+
         self.loss_G.backward()
 
 
     def optimize_parameters(self):
         self.forward()
-        if self.updateD:
+        if self.opt.D_G_switch == 'adapative':
+            if self.updateD:
+                self.optimizer_D.zero_grad()
+                self.backward_D()
+                self.optimizer_D.step()
+
+            if self.updateG:
+                self.optimizer_G.zero_grad()
+                self.backward_G()
+                self.optimizer_G.step()
+
+
+            if self.loss_d_fake.data[0] < self.opt.margin or self.loss_d_real.data[0] < self.opt.margin:
+                self.updateD = False
+
+            if self.loss_d_fake.data[0] > (1. - self.opt.margin) or self.loss_d_real.data[0] > (1.- self.opt.margin):
+                self.updateG = False
+
+            if not self.updateD and not self.updateG:
+                self.updateD = True
+                self.updateG = True
+        elif self.opt.D_G_switch == 'alternative':
+
             self.optimizer_D.zero_grad()
             self.backward_D()
             self.optimizer_D.step()
 
-        if self.updateG:
             self.optimizer_G.zero_grad()
             self.backward_G()
             self.optimizer_G.step()
+        else:
+            raise NotImplementedError('switch method [%s] is not implemented' % self.opt.D_G_switch)
 
-        pdb.set_trace()
-
-        if self.loss_d_fake.data[0] < self.opt.margin or self.loss_d_real.data[0] < self.opt.margin:
-            self.updateD = False
-
-        if self.loss_d_fake.data[0] > (1. - self.opt.margin) or self.loss_d_real.data[0] > (1.- self.opt.margin):
-            self.updateG = False
-
-        if not self.updateD and not self.updateG:
-            self.updateD = True
-            self.updateG = True
 
     def get_current_errors(self):
-        return OrderedDict([('G_GAN', self.L_GAN.data[0]),
+        return OrderedDict([('L_GAN', self.L_GAN.data[0]),
                             ('G_Lp', self.Lp.data[0]),
                             ('G_gdl', self.gdl.data[0]),
                             ('D_real', self.loss_d_real.data[0]),
                             ('D_fake', self.loss_d_fake.data[0])
                             ])
 
+        # return OrderedDict([('L_GAN', self.L_GAN.data[0]),
+        #                     ('G_Lp', self.Lp.data[0]),
+        #                     ('G_gdl', self.gdl.data[0])
+        #                     ])
 
+        # return OrderedDict([('D_real', self.loss_d_real.data[0]),
+        #                     ('D_fake', self.loss_d_fake.data[0])
+        #                     ])
     def get_current_visuals(self):
         '''
         :return: dict, diff_in: K-1 [batch_size, h, w, c], ndarray, [0,255];
          targets: K+T ndarrays, pred: T ndarray
         '''
-        diff_in = util.tensorlist2imlist(self.diff_in)
+        diff_in = util.tensorlist2imlist(self.diff_in[:self.K-1])
         targets = util.tensorlist2imlist(self.targets)
         pred = util.tensorlist2imlist(self.pred)
         return OrderedDict([('diff_in', diff_in), ('targets', targets), ('pred', pred)])

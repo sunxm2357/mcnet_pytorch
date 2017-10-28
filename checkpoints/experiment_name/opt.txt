@@ -1,6 +1,6 @@
 ------------ Options -------------
-K: 5
-T: 5
+K: 2
+T: 1
 alpha: 1.0
 backwards: True
 batch_size: 8
@@ -29,7 +29,7 @@ max_dataset_size: inf
 model: mcnet
 nThreads: 0
 name: experiment_name
-nepoch: 1
+nepoch: 2
 nepoch_decay: 0
 niter_decay: 100
 no_html: False

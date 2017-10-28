@@ -10,6 +10,8 @@ def main():
     opt = TrainOptions().parse()
     if opt.debug:
         opt.print_freq = 1
+        opt.save_epoch_freq = 100
+        opt.display_freq = 8
     data_loader = CreateDataLoader(opt)
     dataset = data_loader.load_data()
     dataset_size = len(data_loader)

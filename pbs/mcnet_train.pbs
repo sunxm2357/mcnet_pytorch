@@ -1,5 +1,5 @@
 #PBS -S /bin/bash
-#PBS -N Mcnet_kth
+#PBS -N Mcnet_kth_alternative
 #PBS -l nodes=1:ppn=2:gpus=1
 #PBS -l mem=50GB
 #PBS -l qos=flux
@@ -21,9 +21,11 @@ cd /z/home/sunxm/
 
 module list
 
-cd Documents/McNet_pytorch
+cd Documents/mcnet_pytorch
 
-python train.py --debug=True --nepoch=10 --nepoch_decay=0 --train_data=KTH --gpu_ids=${allocatedgpus[0]} --c_dim=1 --dataroot=../data/KTH/ --nThreads=1 --K=5 --T=1 --name=kth_debug_5_1 
+echo ${allocatedgpus[0]}
+
+python train.py --debug=True --nepoch=5000 --nepoch_decay=0 --train_data=KTH --gpu_ids=0 --c_dim=1 --dataroot=../data/KTH/ --nThreads=1 --K=10 --T=10 --name=kth_debug_10_10_alternative --D_G_switch=alternative 
 
 
 

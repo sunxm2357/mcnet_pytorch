@@ -6,6 +6,7 @@ import inspect, re
 import numpy as np
 import os
 import collections
+import pdb
 
 
 # Converts a Tensor into a Numpy array
@@ -16,7 +17,7 @@ def tensor2im(image_tensor, imtype=np.uint8):
     :param imtype: np.uint8
     :return: ndarray [batch_size, c, h, w]
     """
-    image_numpy = image_tensor[0].cpu().float().numpy()
+    image_numpy = image_tensor.cpu().float().numpy()
     if image_numpy.shape[1] == 1:
         image_numpy = np.tile(image_numpy, (1, 3, 1, 1))
     image_numpy = (np.transpose(image_numpy, (0, 2, 3, 1)) + 1) / 2.0 * 255.0
@@ -26,7 +27,7 @@ def tensor2im(image_tensor, imtype=np.uint8):
 def tensorlist2imlist(tensors):
     ims = []
     for tensor in tensors:
-        ims.append(tensor2im(tensor))
+        ims.append(tensor2im(tensor.data))
     return ims
 
 def inverse_transform(images):

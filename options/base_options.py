@@ -66,6 +66,8 @@ class BaseOptions():
         # save to the disk
         expr_dir = os.path.join(self.opt.checkpoints_dir, self.opt.name)
         makedir(expr_dir)
+        vis_dir = os.path.join(self.opt.visualize_dir, self.opt.name)
+        makedir(vis_dir)
         file_name = os.path.join(expr_dir, 'opt.txt')
         with open(file_name, 'wt') as opt_file:
             opt_file.write('------------ Options -------------\n')
