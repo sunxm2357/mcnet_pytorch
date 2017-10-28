@@ -42,7 +42,7 @@ class KthDataset(BaseDataset):
         if self.debug:
             return self.opt.batch_size
         else:
-            return len(self.trainfiles)
+            return len(self.files)
 
     def name(self):
         return "KthDataset"
@@ -80,7 +80,7 @@ class KthDataset(BaseDataset):
             if len(img.shape) == 2: img = np.expand_dims(img, axis=2)
             if self.flip and flip_flag > 0.5:
                 img = img[:, ::-1, :]
-            targets.append(self.toTensor(img))
+            targets.append(self.toTensor(img.copy()))
             imgs.append(img)
 
         if self.backwards and back_flag > 0.5:
@@ -91,7 +91,7 @@ class KthDataset(BaseDataset):
         for t in range(1, self.K):
             prev = imgs[t-1]/255.
             next = imgs[t]/255.
-            diff_ins.append(torch.from_numpy(np.transpose(next - prev, axes=(2, 0, 1))).float())
+            diff_ins.append(torch.from_numpy(np.transpose(next - prev, axes=(2, 0, 1)).copy()).float())
 
         target = fore_transform(torch.stack(targets, dim=-1))
         diff_in = torch.stack(diff_ins, dim=-1)

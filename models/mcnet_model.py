@@ -199,7 +199,7 @@ class McnetModel(BaseModel):
 
     def optimize_parameters(self):
         self.forward()
-        if self.opt.D_G_switch == 'adapative':
+        if self.opt.D_G_switch == 'adaptive':
             if self.updateD:
                 self.optimizer_D.zero_grad()
                 self.backward_D()
