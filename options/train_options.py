@@ -21,6 +21,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--nepoch_decay', type=int, default=100, help='# of epoch to linearly decay learning rate to zero')
         self.parser.add_argument('--model', type=str, default='mcnet', help='the model to run')
         self.parser.add_argument('--D_G_switch', type=str, default='adaptive', help='type of switching training in D and G [adaptive|alternative]')
+        self.parser.add_argument('--epoch_count', type=int, default=1, help='the starting epoch count, we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>, ...')
 
         # Data Augment
         self.parser.add_argument('--train_data', required=True, type=str, help="name of training dataset [KTH]")
@@ -30,7 +31,6 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument("--flip", default=True, type=bool, help="flip the frames in the videos")
 
         # TODO: add or delete
-        self.parser.add_argument('--epoch_count', type=int, default=1, help='the starting epoch count, we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>, ...')
         self.parser.add_argument('--phase', type=str, default='train', help='train, val, test, etc')
         self.parser.add_argument('--niter_decay', type=int, default=100, help='# of iter to linearly decay learning rate to zero')
         self.parser.add_argument('--no_html', action='store_true', help='do not save intermediate training results to [opt.checkpoints_dir]/[opt.name]/web/')

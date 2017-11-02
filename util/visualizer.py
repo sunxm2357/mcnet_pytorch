@@ -36,7 +36,10 @@ class Visualizer():
     def print_current_errors(self, epoch, i, errors, t):
         message = 'epoch: %d, iters: %d, time: %.3f ' % (epoch, i, t)
         for k, v in errors.items():
-            message += '%s: %.3f ' %(k,v)
+            if k.startswith('Update'):
+                message += '%s: %s ' % (k, str(v))
+            else:
+                message += '%s: %.3f ' %(k,v)
 
         print(message)
         with open(self.log_name, 'a') as log_file:

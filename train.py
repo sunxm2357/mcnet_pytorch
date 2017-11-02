@@ -36,7 +36,7 @@ def main():
                 errors = model.get_current_errors()
                 t = (time.time()-iter_start_time)/opt.batch_size
                 visualizer.print_current_errors(epoch, epoch_iters, errors, t)
-                visualizer.plot_current_errors(epoch, float(epoch_iters)/dataset_size, errors)
+                # visualizer.plot_current_errors(epoch, float(epoch_iters)/dataset_size, errors)
 
             if total_steps % opt.display_freq == 0:
                 visuals = model.get_current_visuals()

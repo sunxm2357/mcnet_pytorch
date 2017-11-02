@@ -16,6 +16,7 @@ class KthDataset(BaseDataset):
         self.opt= opt
         self.root = opt.dataroot
         self.toTensor = transforms.ToTensor()
+        self.log_name = os.path.join(opt.checkpoints_dir, opt.name, 'loss_log.txt')
         if self.opt.is_train:
             f = open(os.path.join(self.root, 'train_data_list_trimmed.txt'), 'r')
         else:
@@ -49,6 +50,9 @@ class KthDataset(BaseDataset):
 
     def __getitem__(self, index):
         tokens = self.files[index].split()
+        # with open(self.log_name, 'a') as log_file:
+        #     log_file.write(tokens[0])
+        # print(tokens[0])
         vid_path = os.path.join(self.root, tokens[0]+'_uncomp.avi')
         vid = imageio.get_reader(vid_path, "ffmpeg")
         low = int(tokens[1])

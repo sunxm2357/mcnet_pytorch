@@ -185,6 +185,23 @@ class McnetModel(BaseModel):
             labels = Variable(torch.ones(h.size()))
         self.L_GAN = self.loss_d(h_sigmoid, labels)
 
+        if not self.updateD:
+            if len(self.gpu_ids) > 0:
+                labels_ = Variable(torch.zeros(h.size()).cuda())
+            else:
+                labels_ = Variable(torch.zeros(h.size()))
+            self.loss_d_fake = self.loss_d(h_sigmoid, labels_)
+
+            input_real = torch.cat(self.targets, dim=1)
+            input_real_ = Variable(input_real.data)
+            h_sigmoid_, h_ = self.discriminator.forward(input_real_, self.opt.batch_size)
+            # print('in real, h:', h_)
+            if len(self.gpu_ids) > 0:
+                labels__ = Variable(torch.ones(h_.size()).cuda())
+            else:
+                labels__ = Variable(torch.ones(h_.size()))
+            self.loss_d_real = self.loss_d(h_sigmoid_, labels__)
+
         outputs = networks.inverse_transform(torch.cat(self.pred, dim=0))
         targets = networks.inverse_transform(torch.cat(self.targets[self.K:], dim=0))
         self.Lp = self.loss_Lp(outputs, targets)
@@ -220,6 +237,7 @@ class McnetModel(BaseModel):
             if not self.updateD and not self.updateG:
                 self.updateD = True
                 self.updateG = True
+
         elif self.opt.D_G_switch == 'alternative':
 
             self.optimizer_D.zero_grad()
@@ -238,7 +256,9 @@ class McnetModel(BaseModel):
                             ('G_Lp', self.Lp.data[0]),
                             ('G_gdl', self.gdl.data[0]),
                             ('D_real', self.loss_d_real.data[0]),
-                            ('D_fake', self.loss_d_fake.data[0])
+                            ('D_fake', self.loss_d_fake.data[0]),
+                            ('Update_D', self.updateD),
+                            ('Update_G', self.updateG)
                             ])
 
         # return OrderedDict([('L_GAN', self.L_GAN.data[0]),

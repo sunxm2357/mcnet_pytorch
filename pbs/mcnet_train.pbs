@@ -1,5 +1,5 @@
 #PBS -S /bin/bash
-#PBS -N Mcnet_kth_10_10_alternative_500epoch
+#PBS -N Mcnet_kth_10_10_alternative_500epoch_9
 #PBS -l nodes=1:ppn=2:gpus=1
 #PBS -l mem=50GB
 #PBS -l qos=flux
@@ -25,8 +25,8 @@ cd Documents/mcnet_pytorch
 
 echo ${allocatedgpus[0]}
 
-python train.py --nepoch=500 --nepoch_decay=0 --train_data=KTH --gpu_ids=0 --c_dim=1 --dataroot=../data/KTH/ --nThreads=1 --K=10 --T=10 --name=kth_10_10_alternative_500epoch --D_G_switch=alternative
+#python train.py --nepoch=533 --nepoch_decay=0 --train_data=KTH --gpu_ids=0 --c_dim=1 --dataroot=../data/KTH/ --nThreads=1 --K=10 --T=10 --name=kth_10_10_adaptive_500epoch_8 --which_epoch=latest --continue_train --epoch_count=463
 
 
-
+python train.py --nepoch=533 --nepoch_decay=0 --train_data=KTH --gpu_ids=0 --c_dim=1 --dataroot=../data/KTH_2/ --nThreads=1 --K=10 --T=10 --name=kth_10_10_adaptive_500epoch_9 --which_epoch=15 --continue_train --epoch_count=16
 
