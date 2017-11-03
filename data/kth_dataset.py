@@ -54,7 +54,12 @@ class KthDataset(BaseDataset):
         #     log_file.write(tokens[0])
         # print(tokens[0])
         vid_path = os.path.join(self.root, tokens[0]+'_uncomp.avi')
-        vid = imageio.get_reader(vid_path, "ffmpeg")
+        while True:
+            try:
+                vid = imageio.get_reader(vid_path,"ffmpeg")
+                break
+            except Exception:
+                print("imageio failed loading frames, retrying")
         low = int(tokens[1])
         high = min([int(tokens[2]), vid.get_length()]) - self.K - self.T + 1
         assert(high >= low, "the video is not qualified")
@@ -77,7 +82,12 @@ class KthDataset(BaseDataset):
         flip_flag = random.random()
         back_flag = random.random()
         for t in range(self.K + self.T):
-            img = cv2.cvtColor(cv2.resize(vid.get_data(stidx + t), (self.image_size, self.image_size)), cv2.COLOR_RGB2GRAY)
+            while True:
+                try:
+                    img = cv2.cvtColor(cv2.resize(vid.get_data(stidx + t), (self.image_size, self.image_size)), cv2.COLOR_RGB2GRAY)
+                    break
+                except Exception:
+                    print("imageio failed loading frames, retrying")
             # if DEBUG:
             #     pdb.set_trace()
             assert (np.max(img) > 1, "the range of image should be [0,255]")
