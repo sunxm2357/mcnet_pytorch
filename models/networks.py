@@ -628,10 +628,6 @@ class Generator(nn.Module):
     def forward(self, K, T, state, batch_size, image_size, diff_in, targets):
         for t in range(K-1):
             enc_h, res_m = self.motion_enc.forward(diff_in[t])
-            # print('type of enc_h:', type(enc_h))
-            # print('len of enc_h', len(enc_h))
-            # print('enc_h[0]', enc_h[0])
-            # print('enc_h[1]', enc_h[1])
             h_dyn, state = self.convLstm_cell.forward(enc_h, state)
 
         xt = targets[K - 1]
