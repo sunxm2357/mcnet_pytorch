@@ -4,7 +4,7 @@ import pdb
 
 def CreateDataset(opt):
     dataset = None
-    if opt.train_data == 'KTH':
+    if opt.data == 'KTH':
         from data.kth_dataset import KthDataset
         dataset = KthDataset()
     else:

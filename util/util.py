@@ -7,7 +7,9 @@ import numpy as np
 import os
 import collections
 import pdb
-
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 
 # Converts a Tensor into a Numpy array
 # |imtype|: the desired type of the converted numpy array
@@ -48,3 +50,40 @@ def bgr2gray(image):
 def makedir(folder):
     if not os.path.isdir(folder):
         os.makedirs(folder)
+
+
+def draw_frame(img, is_input):
+    if img.shape[2] == 1:
+        img = np.repeat(img, [3], axis=2)
+
+    if is_input:
+        img[:2,:,0]  = img[:2,:,2] = 0
+        img[:,:2,0]  = img[:,:2,2] = 0
+        img[-2:,:,0] = img[-2:,:,2] = 0
+        img[:,-2:,0] = img[:,-2:,2] = 0
+        img[:2,:,1]  = 255
+        img[:,:2,1]  = 255
+        img[-2:,:,1] = 255
+        img[:,-2:,1] = 255
+    else:
+        img[:2,:,0]  = img[:2,:,1] = 0
+        img[:,:2,0]  = img[:,:2,2] = 0
+        img[-2:,:,0] = img[-2:,:,1] = 0
+        img[:,-2:,0] = img[:,-2:,1] = 0
+        img[:2,:,2]  = 255
+        img[:,:2,2]  = 255
+        img[-2:,:,2] = 255
+        img[:,-2:,2] = 255
+    return img
+
+
+def draw_err_plot(err, path, err_name):
+    avg_err = np.mean(err, axis=0)
+    T = err.shape[1]
+    plt.clf()
+    x = np.arange(1, T)
+    plt.plot(x, avg_err)
+    plt.xlabel('time steps')
+    plt.ylabel(err_name)
+    plt.grid()
+    plt.savefig(path)

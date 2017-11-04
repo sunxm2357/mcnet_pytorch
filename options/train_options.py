@@ -4,6 +4,7 @@ from .base_options import BaseOptions
 class TrainOptions(BaseOptions):
     def initialize(self):
         BaseOptions.initialize(self)
+        self.parser.add_argument("--batch_size", type=int, dest="batch_size", default=8, help="Mini-batch size")
         self.parser.add_argument("--lr", type=float, dest="lr", default=0.0001, help="Base Learning Rate")
         self.parser.add_argument("--alpha", type=float, dest="alpha", default=1.0, help="Image loss weight")
         self.parser.add_argument("--beta", type=float, dest="beta", default=0.02, help="GAN loss weight")
@@ -25,7 +26,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--no_adversarial', action='store_true', help='do not use the adversarial loss')
 
         # Data Augment
-        self.parser.add_argument('--train_data', required=True, type=str, help="name of training dataset [KTH]")
+        self.parser.add_argument('--data', required=True, type=str, help="name of training dataset [KTH]")
         self.parser.add_argument("--debug", default=False, type=bool, help="when debugging, overfit to the first training samples")
         self.parser.add_argument("--backwards", default=True, type=bool, help="play the video backwards")
         self.parser.add_argument("--pick_mode", default='Random', type=str, help="pick up clip [Random|First|Sequential]")

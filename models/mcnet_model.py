@@ -79,29 +79,20 @@ class McnetModel(BaseModel):
         diff_in = input["diff_in"] # shape[-1] = K-1
         self.diff_in = []
         self.targets = []
+        f_volatile = not self.updateG or not self.is_train
         if len(self.gpu_ids) > 0:
             for i in range(self.K - 1):
-                self.diff_in.append(Variable(diff_in[:, :, :, :, i].cuda()))
-                if not self.updateG:
-                    self.diff_in[-1].volatile = True
+                self.diff_in.append(Variable(diff_in[:, :, :, :, i].cuda(), volatile=f_volatile))
             for i in range(self.K + self.T):
-                self.targets.append(Variable(targets[:, :, :, :, i].cuda()))
-                if not self.updateG:
-                    self.targets[-1].volatile = True
+                self.targets.append(Variable(targets[:, :, :, :, i].cuda(), volatile=f_volatile))
         else:
             for i in range(self.K - 1):
-                self.diff_in.append(Variable(diff_in[:, :, :, :, i]))
-                if not self.updateG:
-                    self.diff_in[-1].volatile = True
+                self.diff_in.append(Variable(diff_in[:, :, :, :, i], volatile=f_volatile))
             for i in range(self.K + self.T):
-                self.targets.append(Variable(targets[:, :, :, :, i]))
-                if not self.updateG:
-                    self.targets[-1].volatile = True
-
+                self.targets.append(Variable(targets[:, :, :, :, i], volatile=f_volatile))
 
     def forward(self):
         self.pred = self.generator.forward(self.K, self.T, self.state, self.opt.batch_size, self.opt.image_size, self.diff_in, self.targets)
-        
 
     def backward_D(self):
         # fake
