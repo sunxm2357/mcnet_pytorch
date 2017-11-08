@@ -1,0 +1,32 @@
+#PBS -S /bin/bash
+#PBS -N Mcnet_kth_10_10_adaptive_500epoch_test
+#PBS -l nodes=cone:ppn=2:gpus=1
+#PBS -l mem=50GB
+#PBS -l qos=flux
+#PBS -M sunxm@umich.edu
+#PBS -m abe
+#PBS -l walltime=10000:00:00
+#PBS -j eo
+#PBS -V
+
+cd /z/home/sunxm/
+export PATH=/z/sw/bin/:/z/sw/sbin/:$PATH
+export LD_LIBRARY_PATH=/z/sw/lib/:$LD_LIBRARY_PATH
+export MANPATH=/z/sw/share/man/:$MANPATH
+source /z/home/sunxm/masknew/bin/activate
+
+
+cd /z/home/sunxm/
+. moduleload.sh
+
+module list
+
+cd Documents/mcnet_pytorch
+
+echo ${allocatedgpus[0]}
+
+python test.py --name=kth_10_10_adaptive_500epoch --gpu_id=0 --dataroot=../data/KTH/ --nThread=1 --data=KTH --c_dim=1 --K=10 --T=20
+
+
+#python train.py --nepoch=533 --nepoch_decay=0 --train_data=KTH --gpu_ids=0 --c_dim=1 --dataroot=../data/KTH_2/ --nThreads=1 --K=10 --T=10 --name=kth_10_10_adaptive_500epoch_9 --which_epoch=15 --continue_train --epoch_count=16
+

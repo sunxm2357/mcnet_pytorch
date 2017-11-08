@@ -21,6 +21,8 @@ class BaseOptions():
         self.parser.add_argument('--visualize_dir', type=str, default='./temp', help='temporary resul--ts are saved here')
         self.parser.add_argument('--result_dir', type=str, default='./results', help='temporary resul--ts are saved here')
         self.parser.add_argument('--init_type', type=str, default='mcnet', help='network initialization [normal|xavier|kaiming|orthogonal|mcnet]')
+        self.parser.add_argument("--debug", default=False, type=bool, help="when debugging, overfit to the first training samples")
+        self.parser.add_argument('--model', type=str, default='mcnet', help='the model to run')
 
         # data augmenting
         self.parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
@@ -71,7 +73,7 @@ class BaseOptions():
         if not self.is_train:
             self.opt.quant_dir = os.path.join(self.opt.result_dir, 'quantitative', self.opt.data, self.opt.name + '_' + self.opt.which_epoch)
             makedir(self.opt.quant_dir)
-            self.opt.save_dir = os.path.join(self.opt.result_dir, 'images', self.opt.data)
+            self.opt.save_dir = os.path.join(self.opt.result_dir, 'images', self.opt.data, self.opt.name + '_' + self.opt.which_epoch)
             makedir(self.opt.save_dir)
 
         file_name = os.path.join(expr_dir, 'opt.txt')

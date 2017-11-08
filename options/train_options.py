@@ -20,14 +20,12 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--margin', type=float, default=0.3, help="the margin used for choosing opt D or G")
         self.parser.add_argument('--nepoch', type=int, default=100, help='# of epoch at starting learning rate')
         self.parser.add_argument('--nepoch_decay', type=int, default=100, help='# of epoch to linearly decay learning rate to zero')
-        self.parser.add_argument('--model', type=str, default='mcnet', help='the model to run')
         self.parser.add_argument('--D_G_switch', type=str, default='adaptive', help='type of switching training in D and G [adaptive|alternative]')
         self.parser.add_argument('--epoch_count', type=int, default=1, help='the starting epoch count, we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>, ...')
         self.parser.add_argument('--no_adversarial', action='store_true', help='do not use the adversarial loss')
 
         # Data Augment
         self.parser.add_argument('--data', required=True, type=str, help="name of training dataset [KTH]")
-        self.parser.add_argument("--debug", default=False, type=bool, help="when debugging, overfit to the first training samples")
         self.parser.add_argument("--backwards", default=True, type=bool, help="play the video backwards")
         self.parser.add_argument("--pick_mode", default='Random', type=str, help="pick up clip [Random|First|Sequential]")
         self.parser.add_argument("--flip", default=True, type=bool, help="flip the frames in the videos")

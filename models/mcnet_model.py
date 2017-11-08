@@ -44,8 +44,10 @@ class McnetModel(BaseModel):
         # load pretrained model
         if not self.is_train or opt.continue_train:
             self.load_network(self.generator, 'generator', opt.which_epoch)
+            print('load generator from pth')
             if self.is_train and not opt.no_adversarial:
                 self.load_network(self.discriminator, 'discriminator', opt.which_epoch)
+                print('load discriminator from pth')
 
         if self.is_train:
             # define loss
@@ -69,8 +71,8 @@ class McnetModel(BaseModel):
             for optimizer in self.optimizers:
                 self.schedulers.append(networks.get_scheduler(optimizer, opt))
 
-            self.updateD = True
-            self.updateG = True
+        self.updateD = True
+        self.updateG = True
 
 
 
@@ -92,6 +94,7 @@ class McnetModel(BaseModel):
                 self.targets.append(Variable(targets[:, :, :, :, i], volatile=f_volatile))
 
     def forward(self):
+        # pdb.set_trace()
         self.pred = self.generator.forward(self.K, self.T, self.state, self.opt.batch_size, self.opt.image_size, self.diff_in, self.targets)
 
     def backward_D(self):

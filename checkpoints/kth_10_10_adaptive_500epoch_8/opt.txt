@@ -1,0 +1,29 @@
+------------ Options -------------
+K: 10
+T: 10
+backwards: False
+batch_size: 1
+c_dim: 1
+checkpoints_dir: ./checkpoints
+data: KTH
+dataroot: /Volumes/easystore/mydata/KTH/
+debug: False
+df_dim: 64
+flip: False
+gf_dim: 64
+gpu_ids: []
+image_size: 128
+init_type: mcnet
+is_train: False
+max_dataset_size: inf
+model: mcnet
+nThreads: 0
+name: kth_10_10_adaptive_500epoch_8
+pick_mode: Test
+quant_dir: ./results/quantitative/KTH/kth_10_10_adaptive_500epoch_8_latest
+result_dir: ./results
+save_dir: ./results/images/KTH
+serial_batches: False
+visualize_dir: ./temp
+which_epoch: latest
+-------------- End ----------------

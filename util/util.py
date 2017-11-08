@@ -67,7 +67,7 @@ def draw_frame(img, is_input):
         img[:,-2:,1] = 255
     else:
         img[:2,:,0]  = img[:2,:,1] = 0
-        img[:,:2,0]  = img[:,:2,2] = 0
+        img[:,:2,0]  = img[:,:2,1] = 0
         img[-2:,:,0] = img[-2:,:,1] = 0
         img[:,-2:,0] = img[:,-2:,1] = 0
         img[:2,:,2]  = 255
@@ -80,10 +80,12 @@ def draw_frame(img, is_input):
 def draw_err_plot(err, path, err_name):
     avg_err = np.mean(err, axis=0)
     T = err.shape[1]
-    plt.clf()
-    x = np.arange(1, T)
-    plt.plot(x, avg_err)
+    # plt.clf()
+    ax = plt.figure().gca()
+    x = np.arange(1, T+1)
+    plt.plot(x, avg_err, marker="d")
     plt.xlabel('time steps')
     plt.ylabel(err_name)
     plt.grid()
+    ax.set_xticks(x)
     plt.savefig(path)

@@ -55,6 +55,7 @@ class KthDataset(BaseDataset):
     def read_seq(self, vid, stidx, tokens):
         targets = []
         imgs = []
+        imgs_numpy = []
         flip_flag = random.random()
         back_flag = random.random()
         for t in range(self.seq_len):
@@ -71,12 +72,15 @@ class KthDataset(BaseDataset):
             if len(img.shape) == 2: img = np.expand_dims(img, axis=2)
             if self.flip and flip_flag > 0.5:
                 img = img[:, ::-1, :]
+            # pdb.set_trace()
             targets.append(self.toTensor(img.copy()))
             imgs.append(img)
+
 
         if self.backwards and back_flag > 0.5:
             targets = targets[::-1]
             imgs = imgs[::-1]
+            imgs_numpy = imgs_numpy[::-1]
 
         diff_ins = []
         for t in range(1, self.K):
@@ -89,7 +93,7 @@ class KthDataset(BaseDataset):
 
         return {'targets': target, 'diff_in': diff_in,
                       'video_name': '%s_%s_%s' % (tokens[0], tokens[1], tokens[2]),
-                      'start-end':  '%d-%d' % (stidx, stidx + self.seq_len - 1), 'imgs': imgs}
+                      'start-end':  '%d-%d' % (stidx, stidx + self.seq_len - 1)}
 
 
     def __getitem__(self, index):

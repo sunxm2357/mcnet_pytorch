@@ -4,3 +4,7 @@
 *.jpg
 *.xml
 *.iml
+*.gif
+*.npz
+*.npy
+*.pth
