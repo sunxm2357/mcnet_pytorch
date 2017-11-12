@@ -8,3 +8,6 @@
 *.npz
 *.npy
 *.pth
+*.tar
+event*
+*.pbs

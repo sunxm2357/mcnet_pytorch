@@ -8,7 +8,7 @@ def CreateDataset(opt):
         from data.kth_dataset import KthDataset
         dataset = KthDataset()
     else:
-        raise ValueError('Dataset [%s] not recognized.' % opt.train_data)
+        raise ValueError('Dataset [%s] not recognized.' % opt.data)
 
     print('dataset [%s] was created' % (dataset.name()))
     dataset.initialize(opt)

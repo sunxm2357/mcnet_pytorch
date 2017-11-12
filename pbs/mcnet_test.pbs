@@ -1,6 +1,6 @@
 #PBS -S /bin/bash
-#PBS -N Mcnet_kth_10_10_adaptive_500epoch_test
-#PBS -l nodes=cone:ppn=2:gpus=1
+#PBS -N Mcnet_kth_5_5_adaptive_600epoch
+#PBS -l nodes=1:ppn=2:gpus=1
 #PBS -l mem=50GB
 #PBS -l qos=flux
 #PBS -M sunxm@umich.edu
@@ -25,8 +25,7 @@ cd Documents/mcnet_pytorch
 
 echo ${allocatedgpus[0]}
 
-python test.py --name=kth_10_10_adaptive_500epoch --gpu_id=0 --dataroot=../data/KTH/ --nThread=1 --data=KTH --c_dim=1 --K=10 --T=20
+#python test.py --name=kth_10_10_adaptive_500epoch --gpu_id=0 --dataroot=../data/KTH/ --nThread=1 --data=KTH --c_dim=1 --K=10 --T=20
 
-
-#python train.py --nepoch=533 --nepoch_decay=0 --train_data=KTH --gpu_ids=0 --c_dim=1 --dataroot=../data/KTH_2/ --nThreads=1 --K=10 --T=10 --name=kth_10_10_adaptive_500epoch_9 --which_epoch=15 --continue_train --epoch_count=16
+python train.py --nepoch=603 --nepoch_decay=0 --train_data=KTH --gpu_ids=0 --c_dim=1 --dataroot=../data/KTH_2/ --nThreads=1 --K=5 --T=5 --name=kth_5_5_adaptive_600epoch_try
 

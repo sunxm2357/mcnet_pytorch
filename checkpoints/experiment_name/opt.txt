@@ -1,4 +1,5 @@
 ------------ Options -------------
+D_G_switch: adaptive
 K: 2
 T: 1
 alpha: 1.0
@@ -9,7 +10,8 @@ beta1: 0.5
 c_dim: 1
 checkpoints_dir: ./checkpoints
 continue_train: False
-dataroot: /Volumes/easystore/mydata/KTH//
+data: KTH
+dataroot: /Volumes/easystore/mydata/KTH/
 debug: True
 df_dim: 64
 display_freq: 1600
@@ -32,15 +34,17 @@ name: experiment_name
 nepoch: 2
 nepoch_decay: 0
 niter_decay: 100
+no_adversarial: False
 no_html: False
 num_iter: 100000
 phase: train
 pick_mode: Random
 print_freq: 1600
+result_dir: ./results
 save_epoch_freq: 5
 save_latest_freq: 5000
 serial_batches: False
-train_data: KTH
+tensorboard_dir: ./tb
 visualize_dir: ./temp
 which_epoch: latest
 -------------- End ----------------

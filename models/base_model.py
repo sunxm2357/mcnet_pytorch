@@ -35,7 +35,7 @@ class BaseModel():
     def get_current_errors(self):
         return {}
 
-    def save(self, label):
+    def save(self, label, epoch):
         pass
 
     # TODO: need to look into them
