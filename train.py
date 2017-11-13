@@ -11,6 +11,7 @@ from val import *
 def main():
     # pdb.set_trace()
     opt, val_opt = TrainOptions().parse()
+    # pdb.set_trace()
     data_loader = CreateDataLoader(opt)
     dataset = data_loader.load_data()
     dataset_size = len(data_loader)

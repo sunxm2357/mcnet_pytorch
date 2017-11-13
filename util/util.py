@@ -89,14 +89,14 @@ def draw_frame_tensor(img, K, T):
     img[:K, 1, :, :2] = 1
     img[:K, 1, -2:, :] = 1
     img[:K, 1, :, -2:] = 1
-    img[K:K+T, 2, :2, :] = img[K:K+T, 1, :2, :] = 0
-    img[K:K+T, 2, :, :2] = img[K:K+T, 1, :, :2] = 0
-    img[K:K+T, 2, -2:, :] = img[K:K+T, 1, -2:, :] = 0
-    img[K:K+T, 2, :, -2:] = img[K:K+T, 1, :, -2:] = 0
-    img[K:K+T, 0, :2, :] = 1
-    img[K:K+T, 0, :, :2] = 1
-    img[K:K+T, 0, -2:, :] = 1
-    img[K:K+T, 0, :, -2:] = 1
+    img[K:K+T, 0, :2, :] = img[K:K+T, 1, :2, :] = 0
+    img[K:K+T, 0, :, :2] = img[K:K+T, 1, :, :2] = 0
+    img[K:K+T, 0, -2:, :] = img[K:K+T, 1, -2:, :] = 0
+    img[K:K+T, 0, :, -2:] = img[K:K+T, 1, :, -2:] = 0
+    img[K:K+T, 2, :2, :] = 1
+    img[K:K+T, 2, :, :2] = 1
+    img[K:K+T, 2, -2:, :] = 1
+    img[K:K+T, 2, :, -2:] = 1
     return img
 
 
@@ -175,4 +175,6 @@ def visual_grid(seq_batch, pred, K, T):
         output = torch.cat([pred_data_sample, target_sample], dim=0)
         vis.append(vutils.make_grid(output, nrow=K+T))
     grid = torch.cat(vis, dim=1)
+    # pdb.set_trace()
+    grid = torch.from_numpy(np.flip(grid.numpy(), 0).copy())
     return grid

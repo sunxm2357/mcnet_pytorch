@@ -28,10 +28,11 @@ class BaseOptions():
 
         # data augmenting
         self.parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
-        self.parser.add_argument("--image_size", type=int, dest="image_size", default=128, help="Mini-batch size")
+        self.parser.add_argument("--image_size", type=int,  nargs='+',  dest="image_size", default=[128], help="Mini-batch size")
 
         # data loading
-        self.parser.add_argument('--dataroot', required=True, help='path to images (should have subfolders trainA, trainB, valA, valB, etc)')
+        self.parser.add_argument('--dataroot', required=True, help='path to videos (should have subfolders trainA, trainB, valA, valB, etc)')
+        self.parser.add_argument('--textroot', required=True, help='path to trainings (should have subfolders trainA, trainB, valA, valB, etc)')
         self.parser.add_argument('--nThreads', default=2, type=int, help='# threads for loading data')
 
         # TODO: add or delete
@@ -48,6 +49,10 @@ class BaseOptions():
             self.initialize()
         self.opt = self.parser.parse_args()
         self.opt.is_train = self.is_train   # train or test
+
+        if len(self.opt.image_size) == 1:
+            a = self.opt.image_size[0]
+            self.opt.image_size.append(a)
 
         str_ids = self.opt.gpu_ids.split(',')
         self.opt.gpu_ids = []
@@ -103,13 +108,16 @@ class BaseOptions():
             self.val_opt.batch_size = 1
             self.val_opt.is_train = False
             self.val_opt.which_epoch = 'latest'
-            self.val_opt.pick_mode = 'Test'
-            if self.opt.debug:
-                self.val_opt.pick_mode = 'First'
             if self.opt.data == 'KTH':
+                self.val_opt.pick_mode = 'Slide'
                 self.val_opt.T = self.opt.T * 2
+            elif self.opt.data == 'UCF':
+                self.val_opt.pick_mode = 'First'
+                self.val_opt.T = self.opt.T * 5
             else:
                 raise ValueError('Dataset [%s] not recognized.' % self.opt.data)
+            if self.opt.debug:
+                self.val_opt.pick_mode = 'First'
             return self.opt, self.val_opt
         else:
             return self.opt

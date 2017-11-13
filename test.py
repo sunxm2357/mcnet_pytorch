@@ -19,6 +19,7 @@ def main():
     if opt.data == "KTH":
         lims_ssim = [1, opt.T, 0.6, 1]
         lims_psnr = [1, opt.T, 20, 34]
+
     else:
         raise ValueError('Dataset [%s] not recognized.' % opt.data)
     data_loader = CreateDataLoader(opt)
@@ -32,10 +33,10 @@ def main():
     ssim_err = np.zeros((0, opt.T))
 
     for i, datas in enumerate(dataset):
+        if opt.pick_mode == 'First': datas = [datas]
         for data in datas:
             model.set_inputs(data)
             model.forward()
-
 
             if len(opt.gpu_ids) > 0:
                 seq_batch = data['targets'].cpu().numpy().transpose(0, 2, 3, 4, 1)

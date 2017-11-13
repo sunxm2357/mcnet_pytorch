@@ -131,3 +131,25 @@ epoch: 2, iters: 8, time: 0.735 D_real: 0.000 D_fake: 25.200
 =================== Train Loss (Fri Nov 10 23:40:57 2017)==================
 =================== Train Loss (Fri Nov 10 23:50:24 2017)==================
 =================== Train Loss (Fri Nov 10 23:59:55 2017)==================
+=================== Train Loss (Sun Nov 12 22:28:46 2017)==================
+=================== Train Loss (Sun Nov 12 22:29:37 2017)==================
+=================== Train Loss (Sun Nov 12 23:06:51 2017)==================
+epoch: 1, iters: 8, time: 4.072 G_GAN: 1.281 G_Lp: 0.119 G_gdl: 0.076 D_real: 1.281 D_fake: 13.175  
+=================== Train Loss (Sun Nov 12 23:08:57 2017)==================
+epoch: 1, iters: 8, time: 24.072 G_GAN: 0.000 G_Lp: 0.113 G_gdl: 0.042 D_real: -0.000 D_fake: 26.033  
+=================== Train Loss (Sun Nov 12 23:17:28 2017)==================
+epoch: 1, iters: 8, time: 19.848 G_GAN: 0.000 G_Lp: 0.110 G_gdl: 0.044 D_real: 0.000 D_fake: 25.969  
+=================== Train Loss (Sun Nov 12 23:21:27 2017)==================
+epoch: 1, iters: 8, time: 22.061 G_GAN: 0.000 G_Lp: 0.109 G_gdl: 0.042 D_real: 0.000 D_fake: 26.083  
+=================== Train Loss (Sun Nov 12 23:33:19 2017)==================
+epoch: 1, iters: 8, time: 22.770 G_GAN: 0.000 G_Lp: 0.109 G_gdl: 0.043 D_real: -0.000 D_fake: 26.083  
+=================== Train Loss (Sun Nov 12 23:42:37 2017)==================
+epoch: 1, iters: 8, time: 19.170 G_GAN: -0.000 G_Lp: 0.103 G_gdl: 0.042 D_real: -0.000 D_fake: 27.631  
+=================== Train Loss (Sun Nov 12 23:58:33 2017)==================
+epoch: 1, iters: 8, time: 20.145 G_GAN: 0.000 G_Lp: 0.114 G_gdl: 0.044 D_real: -0.000 D_fake: 26.170  
+=================== Train Loss (Mon Nov 13 00:02:33 2017)==================
+epoch: 1, iters: 8, time: 19.173 G_GAN: 0.000 G_Lp: 0.110 G_gdl: 0.044 D_real: -0.000 D_fake: 26.083  
+=================== Train Loss (Mon Nov 13 00:05:59 2017)==================
+epoch: 1, iters: 8, time: 19.068 G_GAN: 0.000 G_Lp: 0.117 G_gdl: 0.044 D_real: 0.000 D_fake: 25.895  
+=================== Train Loss (Mon Nov 13 00:09:49 2017)==================
+epoch: 1, iters: 8, time: 18.812 G_GAN: 0.000 G_Lp: 0.118 G_gdl: 0.043 D_real: -0.000 D_fake: 26.170  

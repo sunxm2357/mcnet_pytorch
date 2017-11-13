@@ -23,18 +23,18 @@ class McnetModel(BaseModel):
         self.start_epoch = opt.epoch_count
 
         if len(opt.gpu_ids) > 0:
-            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8).cuda(), requires_grad=False)
+            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size[0]/8, self.opt.image_size[1]/8).cuda(), requires_grad=False)
         else:
-            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8), requires_grad=False)
+            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size[0]/8, self.opt.image_size[1]/8), requires_grad=False)
 
 
         self.targets = [] # first K-1 are diff, the last one is raw
         for i in range(self.K+self.T):
-            self.targets.append(self.Tensor(opt.batch_size, opt.c_dim, opt.image_size, opt.image_size))
+            self.targets.append(self.Tensor(opt.batch_size, opt.c_dim, opt.image_size[0], opt.image_size[1]))
 
         self.diff_in = []
         for i in range(self.K-1):
-            self.diff_in.append(self.Tensor(opt.batch_size, 1, opt.image_size, opt.image_size))
+            self.diff_in.append(self.Tensor(opt.batch_size, 1, opt.image_size[0], opt.image_size[0]))
 
         # define submodules in G
         self.generator = networks.define_generator(opt.gf_dim, opt.c_dim, 3, gpu_ids=self.gpu_ids)

@@ -25,7 +25,7 @@ class TrainOptions(BaseOptions):
         self.parser.add_argument('--no_adversarial', action='store_true', help='do not use the adversarial loss')
 
         # Data Augment
-        self.parser.add_argument('--data', required=True, type=str, help="name of training dataset [KTH]")
+        self.parser.add_argument('--data', required=True, type=str, help="name of training dataset [KTH|UCF]")
         self.parser.add_argument("--backwards", default=True, type=bool, help="play the video backwards")
         self.parser.add_argument("--pick_mode", default='Random', type=str, help="pick up clip [Random|First|Sequential]")
         self.parser.add_argument("--flip", default=True, type=bool, help="flip the frames in the videos")

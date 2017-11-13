@@ -7,11 +7,11 @@ backwards: True
 batch_size: 8
 beta: 0.02
 beta1: 0.5
-c_dim: 1
+c_dim: 3
 checkpoints_dir: ./checkpoints
 continue_train: False
-data: KTH
-dataroot: /Volumes/easystore/mydata/KTH/
+data: UCF
+dataroot: /Volumes/easystore/mydata/UCF-101/
 debug: True
 df_dim: 64
 display_freq: 1600
@@ -20,7 +20,7 @@ flip: True
 gf_dim: 64
 gpu_ids: []
 identity: 0.0
-image_size: 128
+image_size: [240, 320]
 init_type: mcnet
 is_train: True
 lr: 0.0001
@@ -31,7 +31,7 @@ max_dataset_size: inf
 model: mcnet
 nThreads: 0
 name: experiment_name
-nepoch: 2
+nepoch: 1
 nepoch_decay: 0
 niter_decay: 100
 no_adversarial: False
@@ -45,6 +45,7 @@ save_epoch_freq: 5
 save_latest_freq: 5000
 serial_batches: False
 tensorboard_dir: ./tb
+textroot: /Volumes/easystore/mydata/ucfTrainTestlist/
 visualize_dir: ./temp
 which_epoch: latest
 -------------- End ----------------

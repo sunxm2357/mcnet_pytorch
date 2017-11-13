@@ -15,9 +15,13 @@ from PIL import Image
 
 
 def val(opt):
+    multichannel = not (opt.c_dim == 1)
     if opt.data == "KTH":
         lims_ssim = [1, opt.T, 0, 1]
         lims_psnr = [1, opt.T, 0, 34]
+    elif opt.data == 'UCF':
+        lims_ssim = [1, opt.T, 0, 1]
+        lims_psnr = [1, opt.T, 0, 35]
     else:
         raise ValueError('Dataset [%s] not recognized.' % opt.data)
     data_loader = CreateDataLoader(opt)
@@ -31,7 +35,7 @@ def val(opt):
     ssim_err = np.zeros((0, opt.T))
 
     for i, datas in enumerate(dataset):
-        if opt.debug: datas = [datas]
+        if opt.pick_mode == 'First': datas = [datas]
         for data in datas:
             model.set_inputs(data)
             model.forward()
@@ -55,7 +59,7 @@ def val(opt):
                     pred = np.squeeze(pred, axis=-1)
                     target = np.squeeze(target, axis=-1)
                 cpsnr[t] = measure.compare_psnr(pred, target)
-                cssim[t] = ssim(target, pred)
+                cssim[t] = ssim(target, pred, multichannel=multichannel)
             # pdb.set_trace()
             psnr_err = np.concatenate((psnr_err, cpsnr[None, :]), axis=0)
             ssim_err = np.concatenate((ssim_err, cssim[None, :]), axis=0)
