@@ -49,15 +49,12 @@ class UcfDataset(BaseDataset):
         flip_flag = random.random()
         back_flag = random.random()
         for t in range(self.seq_len):
-            c = 0
             while True:
                 try:
                     img = cv2.resize(vid.get_data(stidx + t), (self.image_size[1], self.image_size[0]))[:, :, ::-1]
                     gray_img = cv2.cvtColor(img.astype("uint8"), cv2.COLOR_BGR2GRAY)
                     break
                 except Exception:
-                    c = c + 1
-                    if c > 5: break
                     print('in cv2', self.vid_path, stidx+t)
                     print("imageio failed loading frames, retrying")
             assert (np.max(img) > 1, "the range of image should be [0,255]")
@@ -103,7 +100,7 @@ class UcfDataset(BaseDataset):
                 print("imageio failed loading frames, retrying")
 
         low = 1
-        high = vid.get_length() - self.seq_len + 1
+        high = vid.get_length() - self.seq_len
         assert(high >= low, "the video is not qualified")
         if self.pick_mode == "Random":
             if low == high:

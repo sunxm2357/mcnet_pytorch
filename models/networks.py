@@ -69,13 +69,14 @@ def weights_init_zeros(m):
     # pdb.set_trace()
     if classname.find('Conv') != -1 and classname != 'ConvLstmCell':
         # init.xavier_normal(m.weight.data, gain=1)
-        init.uniform(m.weight.data, 0.0, 0.02)
+        # init.uniform(m.weight.data, 0.0, 0.02)
+        init.uniform(m.weight.data, 0.0, 0.0001)
         init.constant(m.bias.data, 0.0)
         # m.weight.data = m.weight.data.double()
         # m.bias.data = m.bias.data.double()
         # pdb.set_trace()
     elif classname.find('Linear') != -1:
-        init.uniform(m.weight.data, 0.0, 0.02)
+        init.uniform(m.weight.data, 0.0, 0.0001)
         init.constant(m.bias.data, 0.0)
         # m.weight.data = m.weight.data.double()
     elif classname.find('BatchNorm2d') != -1:
