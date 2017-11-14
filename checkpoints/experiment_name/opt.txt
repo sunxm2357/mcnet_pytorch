@@ -3,7 +3,7 @@ K: 2
 T: 1
 alpha: 1.0
 backwards: True
-batch_size: 8
+batch_size: 1
 beta: 0.02
 beta1: 0.5
 c_dim: 1
