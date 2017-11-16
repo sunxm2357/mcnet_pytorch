@@ -108,7 +108,10 @@ epoch: 2, iters: 8, time: 1.286 D_real: 0.000 D_fake: 25.143
 =================== Train Loss (Fri Oct 27 23:43:35 2017)==================
 epoch: 1, iters: 8, time: 0.720 D_real: 0.000 D_fake: 25.278  
 epoch: 2, iters: 8, time: 0.735 D_real: 0.000 D_fake: 25.200  
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> 9b2080207a9e84bf516828c0651f8ace713bfa61
 =================== Train Loss (Fri Nov 10 22:20:30 2017)==================
 =================== Train Loss (Fri Nov 10 22:22:02 2017)==================
 =================== Train Loss (Fri Nov 10 22:28:42 2017)==================
@@ -173,4 +176,3 @@ epoch: 1, iters: 1, time: 27.468 G_GAN: 0.362 G_Lp: 0.096 G_gdl: 0.034 D_real: 0
 =================== Train Loss (Mon Nov 13 08:50:30 2017)==================
 epoch: 1, iters: 1, time: 12.195 G_GAN: 0.423 G_Lp: 0.096 G_gdl: 0.034 D_real: 0.283 D_fake: 1.393  
 epoch: 2, iters: 1, time: 11.062 G_GAN: 2.333 G_Lp: 0.090 G_gdl: 0.032 D_real: 0.410 D_fake: 1.066  
-

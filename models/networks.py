@@ -7,6 +7,7 @@ from torch.autograd import Variable
 from torch.optim import lr_scheduler
 import numpy as np
 from util.util import *
+from math import floor
 import pdb
 ###############################################################################
 # Functions
@@ -507,24 +508,33 @@ class Discriminator(nn.Module):
     def __init__(self, img_size, c_dim, in_num, out_num, df_dim, gpu_ids):
         super(Discriminator, self).__init__()
         self.gpu_ids = gpu_ids
+        h, w = img_size[0], img_size[1]
 
         conv0 = nn.Conv2d(c_dim * (in_num + out_num), df_dim, 4, stride=2, padding=1)
+        h = floor((h + 2*1 - 4)/2 + 1)
+        w = floor((w + 2*1 - 4)/2 + 1)
         # torch.nn.LeakyReLU(negative_slope=0.01, inplace=False)
         lrelu0 = nn.LeakyReLU(0.2)
 
         conv1 = nn.Conv2d(df_dim, df_dim * 2, 4, stride=2, padding=1)
+        h = floor((h + 2 * 1 - 4) / 2 + 1)
+        w = floor((w + 2 * 1 - 4) / 2 + 1)
         # torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True)
         # bn1 = nn.BatchNorm2d(df_dim * 2, eps=0.001, momentum=0.1)
         bn1 = nn.BatchNorm2d(df_dim * 2)
         lrelu1 = nn.LeakyReLU(0.2)
 
         conv2 = nn.Conv2d(df_dim * 2, df_dim * 4, 4, stride=2, padding=1)
+        h = floor((h + 2 * 1 - 4) / 2 + 1)
+        w = floor((w + 2 * 1 - 4) / 2 + 1)
         # torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True)
         # bn2 = nn.BatchNorm2d(df_dim * 4, eps=0.001, momentum=0.1)
         bn2 = nn.BatchNorm2d(df_dim * 4)
         lrelu2 = nn.LeakyReLU(0.2)
 
         conv3 = nn.Conv2d(df_dim * 4, df_dim * 8, 4, stride=2, padding=1)
+        h = floor((h + 2 * 1 - 4) / 2 + 1)
+        w = floor((w + 2 * 1 - 4) / 2 + 1)
         # torch.nn.BatchNorm2d(num_features, eps=1e-05, momentum=0.1, affine=True)
         # bn3 = nn.BatchNorm2d(df_dim * 8, eps=0.001, momentum=0.1)
         bn3 = nn.BatchNorm2d(df_dim * 8)
@@ -533,7 +543,7 @@ class Discriminator(nn.Module):
         D = [conv0, lrelu0, conv1, bn1, lrelu1, conv2, bn2, lrelu2, conv3, bn3, lrelu3]
         self.D = nn.Sequential(*D)
 
-        in_features = img_size//16 * img_size//16 * df_dim * 8
+        in_features = int(h * w * df_dim * 8)
 
         # torch.nn.Linear(in_features, out_features, bias=True)
         self.linear = nn.Linear(in_features, 1)
@@ -654,6 +664,6 @@ class Generator(nn.Module):
 
             diff_in.append(x_hat_gray - xt_gray)
             xt = x_hat
-            pred.append(x_hat.view(batch_size, self.c_dim, image_size, image_size))
+            pred.append(x_hat.view(batch_size, self.c_dim, image_size[0], image_size[1]))
 
         return pred

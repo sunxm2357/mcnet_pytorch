@@ -33,7 +33,5 @@ echo ${allocatedgpus[0]}
 
 python train.py --nepoch=142 --nepoch_decay=0 --data=UCF --gpu_ids=0 --c_dim=3 --dataroot=/z/dat/UCF101/ --nThreads=1 --K=4 --T=1 --name=ucf_4_1_adaptive_142epoch_3 --alpha=1.0 --beta=0.001 --textroot=../data/ucfTrainTestlist/ --batch_size=1 --image_size 240 320
 
-
-
 #python train.py --nepoch=533 --nepoch_decay=0 --train_data=KTH --gpu_ids=0 --c_dim=1 --dataroot=../data/KTH_2/ --nThreads=1 --K=10 --T=10 --name=kth_10_10_adaptive_500epoch_9 --which_epoch=15 --continue_train --epoch_count=16
 

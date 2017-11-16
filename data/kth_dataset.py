@@ -15,12 +15,10 @@ class KthDataset(BaseDataset):
     def initialize(self, opt):
         self.opt= opt
         self.root = opt.dataroot
+        self.textroot = opt.textroot
         self.toTensor = transforms.ToTensor()
         self.log_name = os.path.join(opt.checkpoints_dir, opt.name, 'loss_log.txt')
-        if self.opt.is_train:
-            f = open(os.path.join(self.root, 'train_data_list_trimmed.txt'), 'r')
-        else:
-            f = open(os.path.join(self.root, 'test_data_list.txt'), 'r')
+        f = open(os.path.join(self.textroot, opt.video_list), 'r')
         self.files = f.readlines()
         self.K = opt.K
         self.T = opt.T
@@ -30,17 +28,10 @@ class KthDataset(BaseDataset):
         self.pick_mode = opt.pick_mode
         self.image_size = opt.image_size
         self.gpu_ids = opt.gpu_ids
-        if self.debug:
-            self.backwards = False
-            self.flip = False
-            self.pick_mode = "First"
-        if self.pick_mode == "Test":
+        if self.pick_mode in ["Slide", "First"]:
             self.backwards = False
             self.flip = False
         self.seq_len = self.K + self.T
-        # if self.pick_mode == "Sequential":
-        #     self.count = np.zeros(len(self.files))
-        # pdb.set_trace()
 
 
     def __len__(self):
@@ -59,12 +50,16 @@ class KthDataset(BaseDataset):
         flip_flag = random.random()
         back_flag = random.random()
         for t in range(self.seq_len):
+            c = 0
             while True:
                 try:
-                    img = cv2.cvtColor(cv2.resize(vid.get_data(stidx + t), (self.image_size, self.image_size)),
+                    img = cv2.cvtColor(cv2.resize(vid.get_data(stidx + t), (self.image_size[1], self.image_size[0])),
                                        cv2.COLOR_RGB2GRAY)
                     break
                 except Exception:
+                    c = c + 1
+                    if c > 5: break
+                    print('in cv2', self.vid_path, stidx+t)
                     print("imageio failed loading frames, retrying")
             # if DEBUG:
             #     pdb.set_trace()
@@ -102,11 +97,13 @@ class KthDataset(BaseDataset):
         #     log_file.write(tokens[0])
         # print(tokens[0])
         vid_path = os.path.join(self.root, tokens[0]+'_uncomp.avi')
+        self.vid_path = vid_path
         while True:
             try:
                 vid = imageio.get_reader(vid_path,"ffmpeg")
                 break
             except Exception:
+                print(vid_path)
                 print("imageio failed loading frames, retrying")
         low = int(tokens[1])
         high = min([int(tokens[2]), vid.get_length()]) - self.seq_len + 1
@@ -118,12 +115,12 @@ class KthDataset(BaseDataset):
                 stidx = np.random.randint(low=low, high=high)
         elif self.pick_mode == "First":
             stidx = low
-        elif self.pick_mode == "Test":
+        elif self.pick_mode == "Slide":
             stidx = low
         else:
             raise NotImplementedError('pick_mode method [%s] is not implemented' % self.pick_mode)
 
-        if not self.pick_mode == "Test":
+        if not self.pick_mode == "Slide":
             input_data = self.read_seq(vid, stidx, tokens)
         else:
             input_data = []

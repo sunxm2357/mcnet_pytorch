@@ -20,34 +20,27 @@ class McnetModel(BaseModel):
         # define tensor
         self.K = opt.K
         self.T = opt.T
+        self.start_epoch = opt.epoch_count
 
         if len(opt.gpu_ids) > 0:
-            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8).cuda(), requires_grad=False)
+            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size[0]/8, self.opt.image_size[1]/8).cuda(), requires_grad=False)
         else:
-            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size/8, self.opt.image_size/8), requires_grad=False)
+            self.state = Variable(torch.zeros(self.opt.batch_size, 512, self.opt.image_size[0]/8, self.opt.image_size[1]/8), requires_grad=False)
 
 
         self.targets = [] # first K-1 are diff, the last one is raw
         for i in range(self.K+self.T):
-            self.targets.append(self.Tensor(opt.batch_size, opt.c_dim, opt.image_size, opt.image_size))
+            self.targets.append(self.Tensor(opt.batch_size, opt.c_dim, opt.image_size[0], opt.image_size[1]))
 
         self.diff_in = []
         for i in range(self.K-1):
-            self.diff_in.append(self.Tensor(opt.batch_size, 1, opt.image_size, opt.image_size))
+            self.diff_in.append(self.Tensor(opt.batch_size, 1, opt.image_size[0], opt.image_size[0]))
 
         # define submodules in G
         self.generator = networks.define_generator(opt.gf_dim, opt.c_dim, 3, gpu_ids=self.gpu_ids)
 
-        if self.is_train and not self.opt.no_adversarial:
-            self.discriminator = networks.define_discriminator(opt.image_size, opt.c_dim, self.K, self.T, opt.df_dim, gpu_ids=self.gpu_ids)
-
-        # load pretrained model
-        if not self.is_train or opt.continue_train:
-            self.load_network(self.generator, 'generator', opt.which_epoch)
-            print('load generator from pth')
-            if self.is_train and not opt.no_adversarial:
-                self.load_network(self.discriminator, 'discriminator', opt.which_epoch)
-                print('load discriminator from pth')
+        self.updateD = True
+        self.updateG = True
 
         if self.is_train:
             # define loss
@@ -59,24 +52,28 @@ class McnetModel(BaseModel):
             self.optimizers = []
             self.optimizer_G = torch.optim.Adam(self.generator.parameters(),
                                                 lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizers.append(self.optimizer_G)
 
             if not opt.no_adversarial:
+                self.discriminator = networks.define_discriminator(opt.image_size, opt.c_dim, self.K, self.T,
+                                                                   opt.df_dim, gpu_ids=self.gpu_ids)
                 self.loss_d = torch.nn.BCELoss()
                 self.optimizer_D = torch.optim.Adam(self.discriminator.parameters(),
                                                 lr=opt.lr, betas=(opt.beta1, 0.999))
-                self.optimizers.append(self.optimizer_D)
 
+        # load pretrained model
+        if not self.is_train or opt.continue_train:
+            self.load(opt.which_epoch)
+
+        if self.is_train:
+            self.optimizers.append(self.optimizer_G)
+            if not opt.no_adversarial:
+                self.optimizers.append(self.optimizer_D)
             # schedular is used for lr decay
             for optimizer in self.optimizers:
                 self.schedulers.append(networks.get_scheduler(optimizer, opt))
 
-        self.updateD = True
-        self.updateG = True
-
-
-
     def set_inputs(self, input):
+        self.data = input
         targets = input["targets"] # shape[-1] = K+T
         diff_in = input["diff_in"] # shape[-1] = K-1
         self.diff_in = []
@@ -218,14 +215,43 @@ class McnetModel(BaseModel):
         :return: dict, diff_in: K-1 [batch_size, h, w, c], ndarray, [0,255];
          targets: K+T ndarrays, pred: T ndarray
         '''
-        diff_in = util.tensorlist2imlist(self.diff_in[:self.K-1])
-        targets = util.tensorlist2imlist(self.targets)
-        pred = util.tensorlist2imlist(self.pred)
-        return OrderedDict([('diff_in', diff_in), ('targets', targets), ('pred', pred)])
+        if len(self.gpu_ids) > 0:
+            seq_batch = self.data['targets'].cpu() # [1, 1, 128, 128, 30]
+            pred = [a.data.cpu() for a in self.pred] # [1,1,128,128]
+        else:
+            seq_batch = self.data['targets']
+            pred = [a.data for a in self.pred]
+        return OrderedDict([('seq_batch', seq_batch), ('pred', pred)])
 
+    def save(self, label, epoch):
+        current_state = {
+            "epoch": epoch,
+            "generator": self.generator.cpu().state_dict(),
+            "discriminator": self.discriminator.cpu().state_dict(),
+            "optimizer_G": self.optimizer_G.state_dict(),
+            "optimizer_D": self.optimizer_D.state_dict(),
+            "updateD": self.updateD,
+            "updateG": self.updateG,
+        }
+        save_filename = '%s_model.pth.tar' % (label)
+        save_path = os.path.join(self.save_dir, save_filename)
+        torch.save(current_state, save_path)
+        if len(self.gpu_ids) and torch.cuda.is_available():
+            self.generator.cuda(device_id=self.gpu_ids[0])
+            self.discriminator.cuda(device_id=self.gpu_ids[0])
 
-    def save(self, label):
-        self.save_network(self.generator, "generator", label, self.gpu_ids)
-        if not self.opt.no_adversarial:
-            self.save_network(self.discriminator, 'discriminator', label, self.gpu_ids)
-
+    def load(self, epoch_label):
+        save_filename = '%s_model.pth.tar' % (epoch_label)
+        save_path = os.path.join(self.save_dir, save_filename)
+        if os.path.isfile(save_path):
+            print("=> loading snapshot from {}".format(save_path))
+            snapshot = torch.load(save_path)
+            self.start_epoch = snapshot['epoch'] + 1
+            self.generator.load_state_dict(snapshot['generator'])
+            if self.is_train:
+                self.optimizer_G.load_state_dict(snapshot["optimizer_G"])
+                if not self.opt.no_adversarial:
+                    self.discriminator.load_state_dict(snapshot['discriminator'])
+                    self.optimizer_D.load_state_dict(snapshot["optimizer_D"])
+            self.updateD = snapshot['updateD']
+            self.updateG = snapshot['updateG']

@@ -16,6 +16,12 @@ from PIL import Image
 
 def main():
     opt = TestOptions().parse()
+    if opt.data == "KTH":
+        lims_ssim = [1, opt.T, 0.6, 1]
+        lims_psnr = [1, opt.T, 20, 34]
+
+    else:
+        raise ValueError('Dataset [%s] not recognized.' % opt.data)
     data_loader = CreateDataLoader(opt)
     dataset = data_loader.load_data()
     dataset_size = len(data_loader)
@@ -27,10 +33,10 @@ def main():
     ssim_err = np.zeros((0, opt.T))
 
     for i, datas in enumerate(dataset):
+        if opt.pick_mode == 'First': datas = [datas]
         for data in datas:
             model.set_inputs(data)
             model.forward()
-
 
             if len(opt.gpu_ids) > 0:
                 seq_batch = data['targets'].cpu().numpy().transpose(0, 2, 3, 4, 1)
@@ -97,9 +103,9 @@ def main():
     save_path = os.path.join(opt.quant_dir, 'results_model=' + opt.name + '_' + opt.which_epoch + '.npz')
     np.savez(save_path, psnr=psnr_err, ssim=ssim_err)
     psnr_plot = os.path.join(opt.quant_dir, 'results_model=' + opt.name + '_' + opt.which_epoch + 'psnr.png')
-    draw_err_plot(psnr_err, psnr_plot, 'Peak Signal to Noise Ratio')
+    draw_err_plot(psnr_err, 'Peak Signal to Noise Ratio', path=psnr_plot, lims=lims_psnr, type="Test")
     ssim_plot = os.path.join(opt.quant_dir, 'results_model=' + opt.name + '_' + opt.which_epoch + 'ssim.png')
-    draw_err_plot(psnr_err, ssim_plot, 'Structural Similarity')
+    draw_err_plot(psnr_err, 'Structural Similarity', path=ssim_plot, lims=lims_ssim, type="Test")
     print("Results saved to " + save_path)
     print("Done.")
 

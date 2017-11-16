@@ -2,6 +2,7 @@ import argparse
 import os
 from util.util import *
 import torch
+import copy
 
 class BaseOptions():
     def __init__(self):
@@ -18,6 +19,7 @@ class BaseOptions():
         self.parser.add_argument('--gf_dim', type=int, default=64, help='# of gen filters in first conv layer')
         self.parser.add_argument('--df_dim', type=int, default=64, help='# of discrim filters in first conv layer')
         self.parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
+        self.parser.add_argument('--tensorboard_dir', type=str, default='./tb', help='models are saved here')
         self.parser.add_argument('--visualize_dir', type=str, default='./temp', help='temporary resul--ts are saved here')
         self.parser.add_argument('--result_dir', type=str, default='./results', help='temporary resul--ts are saved here')
         self.parser.add_argument('--init_type', type=str, default='mcnet', help='network initialization [normal|xavier|kaiming|orthogonal|mcnet]')
@@ -26,10 +28,11 @@ class BaseOptions():
 
         # data augmenting
         self.parser.add_argument('--serial_batches', action='store_true', help='if true, takes images in order to make batches, otherwise takes them randomly')
-        self.parser.add_argument("--image_size", type=int, dest="image_size", default=128, help="Mini-batch size")
+        self.parser.add_argument("--image_size", type=int,  nargs='+',  dest="image_size", default=[128], help="Mini-batch size")
 
         # data loading
-        self.parser.add_argument('--dataroot', required=True, help='path to images (should have subfolders trainA, trainB, valA, valB, etc)')
+        self.parser.add_argument('--dataroot', required=True, help='path to videos (should have subfolders trainA, trainB, valA, valB, etc)')
+        self.parser.add_argument('--textroot', required=True, help='path to trainings (should have subfolders trainA, trainB, valA, valB, etc)')
         self.parser.add_argument('--nThreads', default=2, type=int, help='# threads for loading data')
 
         # TODO: add or delete
@@ -46,6 +49,10 @@ class BaseOptions():
             self.initialize()
         self.opt = self.parser.parse_args()
         self.opt.is_train = self.is_train   # train or test
+
+        if len(self.opt.image_size) == 1:
+            a = self.opt.image_size[0]
+            self.opt.image_size.append(a)
 
         str_ids = self.opt.gpu_ids.split(',')
         self.opt.gpu_ids = []
@@ -70,7 +77,11 @@ class BaseOptions():
         makedir(expr_dir)
         vis_dir = os.path.join(self.opt.visualize_dir, self.opt.name)
         makedir(vis_dir)
+        tb_dir = os.path.join(self.opt.tensorboard_dir, self.opt.name)
+        makedir(tb_dir)
         if not self.is_train:
+            self.opt.serial_batches = True
+            self.opt.video_list = 'test_data_list.txt'
             self.opt.quant_dir = os.path.join(self.opt.result_dir, 'quantitative', self.opt.data, self.opt.name + '_' + self.opt.which_epoch)
             makedir(self.opt.quant_dir)
             self.opt.save_dir = os.path.join(self.opt.result_dir, 'images', self.opt.data, self.opt.name + '_' + self.opt.which_epoch)
@@ -83,4 +94,30 @@ class BaseOptions():
                 opt_file.write('%s: %s\n' % (str(k), str(v)))
             opt_file.write('-------------- End ----------------\n')
 
-        return self.opt
+        if self.is_train:
+            self.opt.video_list = 'train_data_list_trimmed.txt'
+            if self.opt.debug:
+                self.opt.print_freq = 1
+                self.opt.save_epoch_freq = 1
+                self.opt.display_freq = 1
+                self.opt.pick_mode = "First"
+                self.opt.save_latest_freq = 1
+            self.val_opt = copy.deepcopy(self.opt)
+            self.val_opt.serial_batches = True
+            self.val_opt.video_list = 'val_data_list.txt'
+            self.val_opt.batch_size = 1
+            self.val_opt.is_train = False
+            self.val_opt.which_epoch = 'latest'
+            if self.opt.data == 'KTH':
+                self.val_opt.pick_mode = 'Slide'
+                self.val_opt.T = self.opt.T * 2
+            elif self.opt.data == 'UCF':
+                self.val_opt.pick_mode = 'First'
+                self.val_opt.T = self.opt.T * 5
+            else:
+                raise ValueError('Dataset [%s] not recognized.' % self.opt.data)
+            if self.opt.debug:
+                self.val_opt.pick_mode = 'First'
+            return self.opt, self.val_opt
+        else:
+            return self.opt
