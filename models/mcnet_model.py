@@ -202,12 +202,14 @@ class McnetModel(BaseModel):
             return OrderedDict([('G_GAN', self.L_GAN.data[0]),
                                 ('G_Lp', self.Lp.data[0]),
                                 ('G_gdl', self.gdl.data[0]),
+                                ('G_loss', self.loss_G.data[0]),
                                 ('D_real', self.loss_d_real.data[0]),
                                 ('D_fake', self.loss_d_fake.data[0])
                                 ])
         else:
             return OrderedDict([('G_Lp', self.Lp.data[0]),
                                 ('G_gdl', self.gdl.data[0]),
+                                ('G_loss', self.loss_G.data[0])
                                 ])
 
     def get_current_visuals(self):

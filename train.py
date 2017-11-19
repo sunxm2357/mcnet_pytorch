@@ -38,7 +38,8 @@ def main():
                 errors = model.get_current_errors()
                 t = (time.time()-iter_start_time)/opt.batch_size
                 writer.add_scalar('iter_time', t, total_steps / opt.batch_size)
-                writer.add_scalars('loss', errors, total_steps/opt.batch_size)
+                for key in errors.keys():
+                    writer.add_scalar('loss/%s' % (key), errors[key], total_steps/opt.batch_size)
                 visualizer.print_current_errors(epoch, epoch_iters, errors, t)
 
             if total_steps % opt.display_freq == 0:
