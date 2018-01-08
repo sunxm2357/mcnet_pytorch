@@ -11,6 +11,6 @@ Suggest to use [virtualenv](https://virtualenv.pypa.io/en/stable/) and install a
 
 Use requirements.txt to get all dependences.
 
-'''
-pip install
-'''
+```
+pip install -r requirements.txt
+```
