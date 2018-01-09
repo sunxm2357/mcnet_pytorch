@@ -37,8 +37,27 @@ During the training, losses and validation results can be visualized with tensor
 # tensorboard --logdir=tb/<experiment-name>
 tensorboard --logdir=tb/ktn_10_10
 ```
+![alt text][current_batch]
+
+[current_batch]: https://github.com/sunxm2357/mcnet_pytorch/blob/master/imgs/current_batch.png "Logo Title Text 2"
+
+![alt text][sample]
+
+[sample]: https://github.com/sunxm2357/mcnet_pytorch/blob/master/imgs/sample.png "Logo Title Text 2"
+
+![alt text][psnr]
+
+[psnr]: https://github.com/sunxm2357/mcnet_pytorch/blob/master/imgs/psnr.png "Logo Title Text 2"
+
+![alt text][ssim]
+
+[ssim]: https://github.com/sunxm2357/mcnet_pytorch/blob/master/imgs/ssim.png "Logo Title Text 2"
+
 ### Results
-#### Quantitative results
+#### Quantitative results: PSNR & SSIM
+<img src="https://github.com/sunxm2357/mcnet_pytorch/blob/master/imgs/kth_10_10_psnr.png" width="320" height="240"><img src="https://github.com/sunxm2357/mcnet_pytorch/blob/master/imgs/kth_10_10_ssim.png" width="320" height="240">
 
+#### Qualitative results
+<img src="/imgs/boxing_gt.gif" width="128" height="128"><img src="/imgs/handclapping_gt.gif" width="128" height="128"><img src="/imgs/handwaving_gt.gif" width="128" height="128"><img src="/imgs/jogging_gt.gif" width="128" height="128"><img src="/imgs/running_gt.gif" width="128" height="128"><img src="/imgs/walking_gt.gif" width="128" height="128">
 
-
+<img src="/imgs/boxing_pred.gif" width="128" height="128"><img src="/imgs/handclapping_pred.gif" width="128" height="128"><img src="/imgs/handwaving_pred.gif" width="128" height="128"><img src="/imgs/jogging_pred.gif" width="128" height="128"><img src="/imgs/running_pred.gif" width="128" height="128"><img src="/imgs/walking_pred.gif" width="128" height="128">
